@@ -12,15 +12,8 @@ int main (int argc, char** argv)
         return 0;
     }
     
-    HmApp app;
-    app.setup (640, 480, "Heightmap Viewer 0.1", 4, 2);
-    app.setHeightMap (argv[1]);
+    HmApp app (argv[1]);
     app.runCapped (30);
-    
-    /*OGDT::Image image;
-    OGDT::Image::from_file (argv[1], image);
-    
-    printf ("width: %d, height: %d\n", image.width(), image.height());*/
         
     return 0;
 }

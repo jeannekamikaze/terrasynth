@@ -12,13 +12,13 @@ class HmApp : public OGDT::Application
     HmApp (const HmApp&);
     HmApp& operator= (const HmApp&);
 
+    void setHeightMap (const char *path);
+
 public:
 
-    HmApp ();
+    HmApp (const char* height_map_path, int w = 800, int h = 600);
 
     ~HmApp ();
-
-    void onInit ();
 
     void onResize (int width, int height);
 
@@ -31,6 +31,4 @@ public:
     void onMouseMove (int x, int y);
 
     void onMouseWheel (int pos);
-
-    void setHeightMap (const char* path);
 };

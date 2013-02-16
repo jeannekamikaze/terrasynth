@@ -5,7 +5,6 @@
 #include <OGDT/Image.h>
 #include <OGDT/math/Camera.h>
 #include <OGDT/math/vec3.h>
-#include <AntTweakBar.h>
 #include <cstdio>
 #include <cmath>
 
@@ -104,28 +103,15 @@ struct HmApp::_impl
 
     bool wireframe;
 
-    TwBar* tweak_bar;
-
     _impl ()
-        : heightmap (nullptr), heightmap_tex (0), dragging (false), wireframe (false),
-          tweak_bar (nullptr) {}
+        : heightmap (nullptr), heightmap_tex (0), dragging (false), wireframe (false) {}
 };
 
-HmApp::HmApp () : impl (new _impl)
-{
-}
-
-HmApp::~HmApp ()
-{
-    TwDeleteAllBars ();
-    if (impl->heightmap) delete impl->heightmap;
-    if (impl->heightmap_tex) glDeleteTextures (1, &impl->heightmap_tex);
-    delete impl;
-}
-
-void HmApp::onInit ()
+HmApp::HmApp (const char* height_map_path, int w, int h)
+    : Application (w, h, "Heightmap Viewer 0.1", 4, 2), impl (new _impl)
 {
     glGenTextures (1, &impl->heightmap_tex);
+    setHeightMap (height_map_path);
 
     Program& prog = impl->prog;
     prog.id = create_program_from_files ("assets/glsl/terrain.vert", "assets/glsl/terrain.frag");
@@ -155,11 +141,14 @@ void HmApp::onInit ()
     glEnable (GL_DEPTH_TEST);
 
     impl->wheel = getInput().getMouseWheel();
-
-    TwInit (TW_OPENGL_CORE, NULL);
-    impl->tweak_bar = TwNewBar ("TweakBar");
 }
 
+HmApp::~HmApp ()
+{
+    if (impl->heightmap) delete impl->heightmap;
+    if (impl->heightmap_tex) glDeleteTextures (1, &impl->heightmap_tex);
+    delete impl;
+}
 
 void HmApp::onResize (int width, int height)
 {
@@ -167,7 +156,6 @@ void HmApp::onResize (int width, int height)
     glViewport (0, 0, width, height);
     impl->cam = Camera (45.0f, impl->aspect, 1.0f, impl->far);
     update_projection (impl->prog.id, impl->prog.projection, impl->cam);
-    TwWindowSize (width, height);
 }
 
 void HmApp::update (float dt)
@@ -215,8 +203,6 @@ void HmApp::update (float dt)
     glBindTexture (GL_TEXTURE_2D, 0);
     glUseProgram (0);
     if (impl->wireframe) glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
-
-    TwDraw ();
 
     swapBuffers ();
 }
