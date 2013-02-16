@@ -44,7 +44,7 @@ int main (int argc, char** argv)
     int cell_size = 64;
     int octaves = 1;
     float lacunarity = 2.0f;
-    float H = 1.0f;
+    float H = 0.5f;
 
     exec_type_t exec_type; 
 
