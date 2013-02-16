@@ -71,7 +71,7 @@ int main (int argc, char** argv)
     const char* f_out = argv[1];
 
     int c;
-    while ((c = getopt (argc, argv, "w:h:s:t:f:c:n:l:h:")) != -1) {
+    while ((c = getopt (argc, argv, "w:h:s:t:f:c:n:l:H:")) != -1) {
         switch (c) {
         case 'w': w = atoi (optarg); break;
         case 'h': h = atoi (optarg); break;
