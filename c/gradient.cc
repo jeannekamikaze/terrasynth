@@ -136,7 +136,7 @@ void fbm (int seed, float* image, int w, int h, int cell_size, float lacunarity,
     setup (seed);
     const float s = 1.0f / cell_size;
     const float gain = pow (lacunarity, -2*H);
-    const float fbm_max = geom (gain, octaves);
+    const float fbm_max = gain == 1.0f ? 1.0f : geom (gain, octaves);
     for (int i = 0; i < h; ++i) {
         for (int j = 0; j < w; ++j) {
             float* p = image++;
