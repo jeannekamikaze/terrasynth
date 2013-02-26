@@ -19,14 +19,14 @@ import Data.Array.Accelerate
 type Smooth a = Exp a -> Exp a
 
 type Interpolation a
-     =  Exp a -- ^ First value
+     =  Exp a -- ^ Interpolation factor
+     -> Exp a -- ^ First value
      -> Exp a -- ^ Second value
-     -> Exp a -- ^ Interpolation factor
      -> Exp a
 
 -- | Smooth out the given value using S-curve.
 scurve :: (IsNum a, Elt a) => Smooth a
-scurve t = t * t * (t * (-2) - 3)
+scurve t = t * t * (t * (-2) + 3)
 
 -- | Smooth out the given value using cos.
 scos :: (IsFloating a, Elt a) => Smooth a
@@ -34,7 +34,7 @@ scos t = (1 - cos (pi-t)) / 2
 
 -- | A generalised lerp that takes a smooth function as an argument.
 lerp' :: (IsNum a, Elt a) => Smooth a -> Interpolation a
-lerp' s t a b = a + b*(1-t') where t' = s t
+lerp' s t a b = a + (b-a)*t' where t' = s t
 
 -- | Linearly interpolate two values.
 lerp :: (IsNum a, Elt a) => Interpolation a

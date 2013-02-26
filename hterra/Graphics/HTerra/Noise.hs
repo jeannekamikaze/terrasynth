@@ -1,6 +1,15 @@
 {-# LANGUAGE TypeOperators #-}
 module Graphics.HTerra.Noise
 (
+    -- * Data types
+    Point2
+,   Noise
+,   Perms
+,   Gradients
+,   Seed
+    -- * Noise functions
+,   perlin
+,   perlin'
 )
 where
 
@@ -8,72 +17,107 @@ import Graphics.HTerra.Interp
 
 import Data.Array.Accelerate as A
 import Data.Bits ((.&.))
+import Control.Monad.Random
+import Prelude as P
 
-type Noise a b = Acc a -> Exp b
+import qualified Data.Array.Accelerate.Interpreter as I
+
+type Point2 a = (a,a)
+type Noise a b = Exp a -> Exp b
+type Perms a = Acc (Vector a)
+type Gradients a = Acc (Vector (Point2 a))
+
+-- | A random number seed.
 type Seed = Int
 
-type Perms a = Acc (Vector a)
-type Gradients a = Acc (Vector a)
+-- Create a permutation table of 256 values.
+perms :: Seed -> [Word8]
+perms seed = create (mkStdGen seed) 0 []
+      where create _ 256 xs = xs
+            create g i xs =
+                   let (x,g') = randomR (0,255) g
+                       xs' = x:xs
+                   in xs' `seq` create g' (i+1) xs'
+
+-- Create a list of N gradient vectors along the unit circle.
+grads :: Int -> [Point2 Float]
+grads i =
+      let step = 2*pi / (P.fromIntegral i)
+          grads' a = (cos a, sin a) : grads' (a+step)
+      in P.take (2*i) $ grads' 0
 
 -- 1D permutation table index function.
 perm :: (Elt a, IsIntegral b, Elt b) => Perms a -> Exp b -> Exp a
 perm perms x = perms ! index1 (A.fromIntegral x .&. 255)
 
 -- 2D permutation table index function.
-index :: (IsIntegral a, Elt a, IsIntegral b, Elt b) => Perms a -> Acc (Vector b) -> Exp a
-index ps p = perm' (x + perm' y)
+index :: (IsIntegral a, Elt a) => Perms a -> Exp (Point2 Int) -> Exp a
+index ps p = perm' (x' + perm' y')
       where perm' = perm ps
-            x = A.fromIntegral $ p ! index1 0
-            y = A.fromIntegral $ p ! index1 1
+            (x,y) = unlift p :: (Exp Int, Exp Int)
+            x' = A.fromIntegral x
+            y' = A.fromIntegral y
 
 -- Index the gradients vector.
-grad :: (Elt a, IsIntegral b, Elt b) => Gradients a -> Exp b -> Acc (Vector a)
-grad grads i = A.generate (index1 2) $
-     \ix -> let (Z:.x) = unlift ix
-                x' = A.fromIntegral x
-                i' = A.fromIntegral i
-            in grads ! index1 (2*i'+x')
+grad :: (Elt a, IsIntegral b, Elt b) => Gradients a -> Exp b -> Exp (Point2 a)
+grad grads i = grads ! index1 (A.fromIntegral i)
 
-perlin' :: Perms Word8 -> Gradients Float -> Smooth Float -> Noise (Vector Float) Float
+perlin :: Seed -> Noise (Point2 Float) Float
+perlin seed =
+       let perms' = use . A.fromList (Z:.256) $ perms seed
+           grads' = use . A.fromList (Z:.256) $ grads 256
+       in perlin' perms' grads' scurve
+
+perlin' :: Perms Word8 -> Gradients Float -> Smooth Float -> Noise (Point2 Float) Float
 perlin' perms grads smooth p =
-        let p0  = A.map A.floor p :: Acc (Vector Int)
-            p1  = p0 `plus` A.generate (index1 2) right :: Acc (Vector Int)
-            p2  = p0 `plus` A.generate (index1 2) down :: Acc (Vector Int)
-            p3  = p0 `plus` A.fill (index1 2) 1 :: Acc (Vector Int)
+        let -- Compute gradients
+            p0  = floor' p
+            p1  = p0 `plus` constant (1,0)
+            p2  = p0 `plus` constant (0,1)
+            p3  = p0 `plus` constant (1,1)
             idx = index perms
-            g0  = grad grads $ idx p0 :: Acc (Vector Float)
-            g1  = grad grads $ idx p1 :: Acc (Vector Float)
-            g2  = grad grads $ idx p2 :: Acc (Vector Float)
-            g3  = grad grads $ idx p3 :: Acc (Vector Float)
-            s   = g0 `dot` (p `minus` A.map A.fromIntegral p0)
-            t   = g1 `dot` (p `minus` A.map A.fromIntegral p1)
-            u   = g2 `dot` (p `minus` A.map A.fromIntegral p2)
-            v   = g3 `dot` (p `minus` A.map A.fromIntegral p3)
-            x   = p ! index1 0
-            y   = p ! index1 1
-            x0  = A.fromIntegral $ p0 ! index1 0
-            y0  = A.fromIntegral $ p0 ! index1 0
+            g0  = grad grads $ idx p0
+            g1  = grad grads $ idx p1
+            g2  = grad grads $ idx p2
+            g3  = grad grads $ idx p3
+            -- Compute weights
+            s   = g0 `dot` (p `minus` toFloat p0)
+            t   = g1 `dot` (p `minus` toFloat p1)
+            u   = g2 `dot` (p `minus` toFloat p2)
+            v   = g3 `dot` (p `minus` toFloat p3)
+            -- Interpolate values
+            (x,y)   = unlift p :: (Exp Float, Exp Float)
+            (x0,y0) = unlift (toFloat p0) :: (Exp Float, Exp Float)
             sx  = smooth (x-x0)
             sy  = smooth (y-y0)
-            a   = lerp s t sx
-            b   = lerp u v sx
-            c   = lerp a b sy
+            a   = lerp sx s t
+            b   = lerp sx u v
+            c   = lerp sy a b
         in  c*0.5 + 0.5
 
-right :: (IsIntegral a, Elt a, IsIntegral b, Elt b) => Exp (Z:.b) -> Exp a
-right ix = let (Z:.x) = unlift ix in 1 - A.fromIntegral x
+floor' :: Exp (Point2 Float) -> Exp (Point2 Int)
+floor' p = lift (x',y')
+       where (x,y) = unlift p :: (Exp Float, Exp Float)
+             x' = A.floor x
+             y' = A.floor y
 
-down :: (IsIntegral a, Elt a, IsIntegral b, Elt b) => Exp (Z:.b) -> Exp a
-down ix = let (Z:.x) = unlift ix in A.fromIntegral x
+toFloat :: Exp (Point2 Int) -> Exp (Point2 Float)
+toFloat p = lift (x',y')
+        where (x,y) = unlift p :: (Exp Int, Exp Int)
+              x' = A.fromIntegral x
+              y' = A.fromIntegral y
 
--- Vector addition.
-plus :: (IsNum a, Elt a) => Acc (Vector a) -> Acc (Vector a) -> Acc (Vector a)
-plus a b = A.zipWith (+) a b
+plus :: (IsNum a, Elt a) => Exp (a,a) -> Exp (a,a) -> Exp (a,a)
+plus a b = lift (ax+bx, ay+by)
+     where (ax,ay) = (A.fst a, A.snd a)
+           (bx,by) = (A.fst b, A.snd b)
 
--- Vector subraction.
-minus :: (IsNum a, Elt a) => Acc (Vector a) -> Acc (Vector a) -> Acc (Vector a)
-minus a b = A.zipWith (-) a b
+minus :: (IsNum a, Elt a) => Exp (a,a) -> Exp (a,a) -> Exp (a,a)
+minus a b = lift (ax-bx, ay-by)
+      where (ax,ay) = (A.fst a, A.snd a)
+            (bx,by) = (A.fst b, A.snd b)
 
--- Vector dot product.
-dot :: (IsNum a, Elt a) => Acc (Array (Z :. Int) a) -> Acc (Array (Z :. Int) a) -> Exp a
-dot a b = (!index0) . A.fold1 (+) $ A.zipWith (*) a b
+dot :: (IsNum a, Elt a) => Exp (Point2 a) -> Exp (Point2 a) -> Exp a
+dot a b = ax*bx + ay*by
+    where (ax,ay) = (A.fst a, A.snd a)
+          (bx,by) = (A.fst b, A.snd b)
