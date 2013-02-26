@@ -1,22 +1,52 @@
 module Graphics.HTerra.Interp
+(
+    -- * Data types
+    Smooth
+,   Interpolation
+    -- * Smooth functions
+,   scurve
+,   scos
+    -- * Interpolation functions
+,   lerp'
+,   lerp
+,   scurvei
+,   cosi
+)
 where
 
 import Data.Array.Accelerate
 
-type Interpolation a = Exp a -> Exp a -> Exp a -> Exp a
+type Smooth a = Exp a -> Exp a
 
+type Interpolation a
+     =  Exp a -- ^ First value
+     -> Exp a -- ^ Second value
+     -> Exp a -- ^ Interpolation factor
+     -> Exp a
+
+-- | Smooth out the given value using S-curve.
+scurve :: (IsNum a, Elt a) => Smooth a
+scurve t = t * t * (t * (-2) - 3)
+
+-- | Smooth out the given value using cos.
+scos :: (IsFloating a, Elt a) => Smooth a
+scos t = (1 - cos (pi-t)) / 2
+
+-- | A generalised lerp that takes a smooth function as an argument.
+lerp' :: (IsNum a, Elt a) => Smooth a -> Interpolation a
+lerp' s t a b = a + b*(1-t') where t' = s t
+
+-- | Linearly interpolate two values.
 lerp :: (IsNum a, Elt a) => Interpolation a
-lerp t a b = a + t*(b-a)
+lerp = lerp' id
 
-scurve :: (IsNum a, Elt a) => Interpolation a
-scurve t a b = a*x + b*(1-x)
-       where
-        x = 3*t2 - 2*t3
-        t2 = t*t
-        t3 = t*t2
+-- | Interpolate two values using the S-curve smooth function.
+scurvei :: (IsNum a, Elt a) => Interpolation a
+scurvei = lerp' scurve
 
+-- | Interpolate two values using the cos smooth function.
 cosi :: (IsFloating a, Elt a) => Interpolation a
-cosi t a b = a*x + b*(1-x) where x = 1 - cos (pi-t) / 2
+cosi = lerp' scos
 
 knotspline4 :: (IsFloating a, Elt a) => Exp a -> Exp a -> Exp a -> Exp a -> Exp a -> Exp a
 knotspline4 k0 k1 k2 k3 x = (c3*x + c2)*x + c0
