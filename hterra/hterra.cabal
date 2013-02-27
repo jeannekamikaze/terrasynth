@@ -15,6 +15,14 @@ build-type:          Simple
 cabal-version:       >=1.8
 
 library
-  -- exposed-modules:     
+  exposed-modules:     Graphics.HTerra.Interp
+                       Graphics.HTerra.Noise
+                       Graphics.HTerra.Image
   -- other-modules:       
-  build-depends:       base ==4.5.*
+  build-depends:       base,
+                       accelerate,
+                       accelerate-cuda,
+                       random,
+                       bytestring
+
+  ghc-options:         -O2
