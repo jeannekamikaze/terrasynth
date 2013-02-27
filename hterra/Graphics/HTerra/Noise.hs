@@ -17,7 +17,7 @@ import Graphics.HTerra.Interp
 
 import Data.Array.Accelerate as A
 import Data.Bits ((.&.))
-import Control.Monad.Random
+import System.Random
 import Prelude as P
 
 import qualified Data.Array.Accelerate.Interpreter as I
@@ -30,14 +30,15 @@ type Gradients a = Acc (Vector (Point2 a))
 -- | A random number seed.
 type Seed = Int
 
--- Create a permutation table of 256 values.
-perms :: Seed -> [Word8]
-perms seed = create (mkStdGen seed) 0 []
-      where create _ 256 xs = xs
-            create g i xs =
-                   let (x,g') = randomR (0,255) g
-                       xs' = x:xs
-                   in xs' `seq` create g' (i+1) xs'
+-- Create a permutation table of N values.
+perms :: (Num a, Eq a, Random a) => Seed -> a -> [a]
+perms seed n = create (mkStdGen seed) 0 []
+      where create g i xs
+                   | i == n = xs
+                   | otherwise =
+                     let (x,g') = randomR (0,n-1) g
+                         xs' = x:xs
+                     in xs' `seq` create g' (i+1) xs'
 
 -- Create a list of N gradient vectors along the unit circle.
 grads :: Int -> [Point2 Float]
@@ -64,7 +65,7 @@ grad grads i = grads ! index1 (A.fromIntegral i)
 
 perlin :: Seed -> Noise (Point2 Float) Float
 perlin seed =
-       let perms' = use . A.fromList (Z:.256) $ perms seed
+       let perms' = use . A.fromList (Z:.256) $ perms seed 256
            grads' = use . A.fromList (Z:.256) $ grads 256
        in perlin' perms' grads' scurve
 
