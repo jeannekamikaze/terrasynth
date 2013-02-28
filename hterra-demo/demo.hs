@@ -16,13 +16,11 @@ perlinImage run seed cs w h file =
             in writePGM file image
 
 perlinImage' :: Backend (Image Float) -> Seed -> CellSize -> Width -> Height -> Image Float
-perlinImage' run seed cs w h = noiseImage run (N.perlin seed) $ matrix cs w h
+perlinImage' run seed cs w h = noiseImage run (N.perlin seed) $ matrix' cs w h
 
-matrix :: CellSize -> Width -> Height -> Matrix (Point2 Float)
-matrix cs w h = A.fromList (Z:.w:.h) $ [(y,x) | y <- [0,s..h'], x <- [0,s..w']]
-       where w' = (P.fromIntegral w - 1) / cs
-             h' = (P.fromIntegral h - 1) / cs
-             s  = 1/cs
+matrix' :: CellSize -> Width -> Height -> Matrix (Point2 Float)
+matrix' cs = matrix pdiv
+        where pdiv (x,y) = (P.fromIntegral x / cs, P.fromIntegral y / cs)
 
 data Runner = Interpreter | Cuda deriving (Data, Typeable, Show)
 

@@ -12,6 +12,7 @@ module Graphics.HTerra.Image
     -- * Image creation
 ,   noiseImage
 ,   noiseImage'
+,   matrix
     -- * Input and output
 ,   writePGM
 )
@@ -44,6 +45,14 @@ noiseImage run noise mat = run $ noiseImage' noise mat
 -- | Create an image from a noise function.
 noiseImage' :: (Elt a, Elt b) => Noise a b -> Matrix a -> Acc (Image b)
 noiseImage' noise mat = A.map noise . use $ mat
+
+-- | Create a matrix used as the source of a noise image.
+matrix :: (Num a, Enum a, Elt b)
+       => (Point2 a -> Point2 b) -- ^ A function to apply to every point in the matrix.
+       -> Width -> Height -> Matrix (Point2 b)
+matrix f w h = A.fromList (Z:.w:.h) . P.map f $ [(y,x) | y <- [0..h'], x <- [0..w']]
+       where w' = P.fromIntegral w
+             h' = P.fromIntegral h
 
 -- | Save the image as PGM.
 writePGM :: FilePath -> Image Float -> IO ()
