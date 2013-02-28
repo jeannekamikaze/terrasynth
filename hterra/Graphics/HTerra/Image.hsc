@@ -1,3 +1,4 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
 module Graphics.HTerra.Image
 (
     -- * Data Types
@@ -13,15 +14,19 @@ module Graphics.HTerra.Image
 ,   noiseImage'
     -- * Input and output
 ,   writePGM
-,   writePGM'
 )
 where
 
 import Graphics.HTerra.Noise as N
 
 import Data.Array.Accelerate as A
+import Data.Array.Accelerate.IO
 import Data.ByteString.Char8 as B
 import Data.Char (chr)
+import Foreign.C.String (CString, withCString)
+import Foreign.C.Types
+import Foreign.Marshal.Array (allocaArray)
+import Foreign.Ptr (Ptr)
 import System.IO
 import Prelude as P
 
@@ -43,18 +48,11 @@ noiseImage' noise mat = A.map noise . use $ mat
 -- | Save the image as PGM.
 writePGM :: FilePath -> Image Float -> IO ()
 writePGM file img =
-         let Z:.w:.h = arrayShape img
-             img' = pack . P.map toChar . toList $ img
-         in withBinaryFile file WriteMode $ writePGM' w h img'
+         let (Z:.w:.h) = arrayShape img
+         in withCString file $ \cfile ->
+            allocaArray (w*h) $ \p -> do
+            toPtr img ((),p)
+            write_pgm (P.fromIntegral w) (P.fromIntegral h) p cfile
 
--- | Save the image as PGM.
-writePGM' :: Int -> Int -> ByteString -> Handle -> IO ()
-writePGM' w h bits hnd =
-          let header = headerPGM w h
-          in hPut hnd header >> hPut hnd bits
-
-headerPGM :: Int -> Int -> ByteString
-headerPGM w h = pack $ "P5 " ++ show w ++ " " ++ show h ++ " 255" ++ "\n"
-
-toChar :: Float -> Char
-toChar = chr . P.floor . (*255)
+foreign import ccall unsafe "write_pgm"
+        write_pgm :: CInt -> CInt -> Ptr Float -> CString -> IO ()
