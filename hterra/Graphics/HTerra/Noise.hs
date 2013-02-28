@@ -20,8 +20,6 @@ import Data.Bits ((.&.))
 import System.Random
 import Prelude as P
 
-import qualified Data.Array.Accelerate.Interpreter as I
-
 type Point2 a = (a,a)
 type Noise a b = Exp a -> Exp b
 type Perms a = Acc (Vector a)
@@ -31,21 +29,15 @@ type Gradients a = Acc (Vector (Point2 a))
 type Seed = Int
 
 -- Create a permutation table of N values.
-perms :: (Num a, Eq a, Random a) => Seed -> a -> [a]
-perms seed n = create (mkStdGen seed) 0 []
-      where create g i xs
-                   | i == n = xs
-                   | otherwise =
-                     let (x,g') = randomR (0,n-1) g
-                         xs' = x:xs
-                     in xs' `seq` create g' (i+1) xs'
+perms :: (Num a, Eq a, Integral a, Random a) => Seed -> Int -> [a]
+perms seed n = fmap P.fromIntegral . P.take n $ randomRs (0,n-1) (mkStdGen seed)
 
 -- Create a list of N gradient vectors along the unit circle.
 grads :: Int -> [Point2 Float]
 grads i =
       let step = 2*pi / (P.fromIntegral i)
           grads' a = (cos a, sin a) : grads' (a+step)
-      in P.take (2*i) $ grads' 0
+      in P.take i $ grads' 0
 
 -- 1D permutation table index function.
 perm :: (Elt a, IsIntegral b, Elt b) => Perms a -> Exp b -> Exp a
