@@ -22,7 +22,15 @@ library
   build-depends:       base,
                        accelerate,
                        accelerate-cuda,
+                       accelerate-io,
                        random,
                        bytestring
 
+  build-tools: hsc2hs
+
   ghc-options:         -O2
+  ghc-prof-options:    -fprof-auto -fprof-cafs
+
+  c-sources:           Graphics/HTerra/cimage.c
+
+  cc-options:          -O2
