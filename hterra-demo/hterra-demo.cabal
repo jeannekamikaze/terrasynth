@@ -11,6 +11,6 @@ author: Marc Sunet
 executable hterra-demo
     hs-source-dirs:     .
     build-depends:      base, hterra, accelerate, accelerate-cuda, cmdargs
-    main-is:            Main.hs
+    main-is:            demo.hs
     buildable:          True
-    ghc-options:        -O2 -threaded -auto-all -rtsopts -prof
+    ghc-options:        -O2 -threaded -prof -rtsopts -fprof-auto -fprof-cafs
