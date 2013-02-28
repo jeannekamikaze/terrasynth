@@ -18,19 +18,19 @@ library
   exposed-modules:     Graphics.HTerra.Interp
                        Graphics.HTerra.Noise
                        Graphics.HTerra.Image
+                       Graphics.HTerra.Image.IO
   -- other-modules:       
   build-depends:       base,
                        accelerate,
                        accelerate-cuda,
                        accelerate-io,
-                       random,
-                       bytestring
+                       random
 
   build-tools: hsc2hs
 
   ghc-options:         -O2
   ghc-prof-options:    -fprof-auto -fprof-cafs
 
-  c-sources:           Graphics/HTerra/cimage.c
+  c-sources:           Graphics/HTerra/Image/cimage.c
 
   cc-options:          -O2
