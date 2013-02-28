@@ -1,0 +1,16 @@
+2013.02.28
+
+-- File I/O
+
+Optimised file i/o by replacing 'toList' with a custom C function.
+
+This brought file i/o from 62.5% running time to 18% and got rid of the space leak.
+
+-- matrix
+
+Optimised the 'matrix' function by creating the image on the gpu. The 'matrix' function was
+renamed to 'pixels'.
+
+The running time is now due to image creation, which is what we were looking for.
+
+Current speedup for Perlin image creation of size 8192x8192 is 4x. Of course, the profiler won't show the time taken to transfer data between the cpu and the gpu, and it seems that that is currently the bottleneck. The Perlin function is perhaps so simple that the gpu has very little work to do; hopefully fBm will confirm this and we'll see much greater speedups.
