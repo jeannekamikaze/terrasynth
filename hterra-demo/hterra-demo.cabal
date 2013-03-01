@@ -13,5 +13,5 @@ executable hterra-demo
     build-depends:      base, hterra, accelerate, accelerate-cuda, cmdargs
     main-is:            demo.hs
     buildable:          True
-    ghc-options:        -O2 -threaded -prof -rtsopts -fprof-auto -fprof-cafs
+    ghc-options:        -O2 -threaded
     ghc-prof-options:   -rtsopts -fprof-auto -fprof-cafs
