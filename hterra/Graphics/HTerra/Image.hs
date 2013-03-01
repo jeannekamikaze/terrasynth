@@ -6,10 +6,9 @@ module Graphics.HTerra.Image
 ,   Backend
 ,   Width
 ,   Height
-,   CellSize
     -- * Image creation
 ,   image
-,   pixels
+,   image'
 )
 where
 
@@ -21,18 +20,13 @@ type Image a = Array DIM2 a
 type Backend a = Acc a -> a
 type Width = Int
 type Height = Int
-type CellSize = Float
 
 -- | Create an image from a noise function.
-image :: (Elt a, Elt b) => Backend (Image b) -> Noise a b -> Acc (Image a) -> Image b
-image run noise = run . A.map noise
+image :: (IsNum a, Elt a, Elt b)
+      => Backend (Image b) -> Noise (Point2 a) b -> Width -> Height -> Image b
+image run noise w h = run $ image' noise w h
 
--- | Create an image by evaluating a function at every pixel.
-pixels
-    :: (IsNum a, Elt a, Elt b)
-    => Width -> Height
-    -> (Exp a -> Exp a -> Exp b) -- ^ The function to apply to every point in the matrix.
-    -> Acc (Image b)
-pixels w h f = A.generate (constant (Z:.w:.h)) $
+image' :: (IsNum a, Elt a, Elt b) => Noise (Point2 a) b -> Width -> Height -> Acc (Image b)
+image' noise w h = A.generate (constant (Z:.w:.h)) $
        \ix -> let (Z:.x:.y) = unlift ix
-              in f (A.fromIntegral x) (A.fromIntegral y)
+              in noise . lift $ (A.fromIntegral x, A.fromIntegral y)

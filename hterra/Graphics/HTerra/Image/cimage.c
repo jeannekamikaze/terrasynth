@@ -4,7 +4,7 @@ typedef unsigned char U8;
 
 void write_pgm (int w, int h, const float* image, const char* path)
 {
-    const int n = w*h;
+    const unsigned n = (unsigned) w * (unsigned) h;
     int i;
     FILE* f = fopen (path, "w");
     fprintf (f, "P5 %d %d 255\n", w, h);

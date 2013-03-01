@@ -11,40 +11,56 @@ import qualified Data.Array.Accelerate.CUDA as C
 import System.Console.CmdArgs
 import Prelude as P
 
+fBmPerlin :: Backend (Image Float) -> Seed -> CellSize
+          -> H Float -> Lacunarity Float -> Octaves Float
+          -> Width -> Height -> FilePath -> IO ()
+fBmPerlin run seed cs hu l o w h file =
+          let img = image run (fBm (perlin seed cs) hu l o) w h
+          in writePGM file img
+
 perlinImage :: Backend (Image Float)-> Seed -> CellSize -> Width -> Height -> FilePath -> IO ()
 perlinImage run seed cs w h file =
-            let image = perlinImage' run seed cs w h
-            in writePGM file image
+            let img = image run (perlin seed cs) w h
+            in writePGM file img
 
-perlinImage' :: Backend (Image Float) -> Seed -> CellSize -> Width -> Height -> Image Float
-perlinImage' run seed cs w h =
-             let cs' = constant cs
-                 gen x y = lift (x/cs', y/cs')
-             in image run (N.perlin seed) $ pixels w h gen
+gen cs x y = let cs' = constant cs in lift (x/cs', y/cs')
 
 data Runner = Interpreter | Cuda deriving (Data, Typeable, Show)
+data NoiseType = Perlin | Fbm deriving (Data, Typeable, Show)
 
 data Demo = Demo
      { backend  :: Runner
+     , noise    :: NoiseType
      , seed     :: Int
      , cellSize :: Float
+     , hurst    :: Float
+     , lacu     :: Float
+     , noct     :: Float
      , width    :: Int
      , height   :: Int
      , file     :: String
      } deriving (Data, Typeable, Show)
 
 defaultArgs = cmdArgsMode $ Demo
-            { backend = Interpreter &= name "b" &= typ "Interpreter|Cuda" &= help "Accelerate backend"
-            , seed = 123 &= name "s" &= help "Random seed"
-            , cellSize = 64 &= name "c" &= help "Cell size"
-            , width = 256 &= name "w" &= help "Image width"
-            , height = 256 &= name "h" &= help "Image height"
-            , file = "foo.pgm" &= name "f" &= typFile &= help "Output file name"
+            { backend = Interpreter &= name "b" &= typ "Interpreter | Cuda"
+                                    &= help "Accelerate backend"
+            , noise = Perlin        &= name "t" &= typ "Perlin | Fbm"
+                                    &= help "The type of noise"
+            , seed = 123            &= name "s" &= help "Random seed"
+            , cellSize = 64         &= name "c" &= help "Cell size"
+            , hurst = 0.5           &= name "u" &= typ "[0,1]" &= help "Hurst exponent"
+            , lacu = 2              &= name "l" &= help "Lacunarity"
+            , noct = 6              &= name "n" &= help "The number of octaves to add"
+            , width = 256           &= name "w" &= help "Image width"
+            , height = 256          &= name "h" &= help "Image height"
+            , file = "foo.pgm"      &= name "f" &= typFile &= help "Output file name"
             }
 
 toBackend Interpreter = I.run
 toBackend Cuda = C.run
 
 main = do
-     (Demo run s cs w h file) <- cmdArgsRun defaultArgs
-     perlinImage (toBackend run) s cs w h file
+     (Demo run noise s cs hu lacu noct w h file) <- cmdArgsRun defaultArgs
+     case noise of
+          Perlin -> perlinImage (toBackend run) s cs w h file
+          Fbm    -> fBmPerlin (toBackend run) s cs hu lacu noct w h file
