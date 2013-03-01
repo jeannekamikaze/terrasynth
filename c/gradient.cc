@@ -32,7 +32,7 @@ vec2 grads [TABLE_SIZE];
 void setup (int seed)
 {
     srand (seed);
-    
+
     // Construct a random permutaion table of values uniformly distributed
     // in the 0..255 range.
     for (int i = 0; i < TABLE_SIZE; ++i) perms[i] = i;
