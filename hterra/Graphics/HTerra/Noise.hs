@@ -102,7 +102,7 @@ perlin' perms grads smooth cs p' =
         in  c*0.5 + 0.5
 
 fBm :: (RealFrac a, IsFloating a, Ord a, Elt a)
-    => Noise (Point2 a) a -- ^ The base noise function
+    => Noise (Point2 a) a -- ^ The basis noise function
     -> H a                -- ^ The Hurst exponent, a value between 0 and 1
     -> Lacunarity a       -- ^ The lacunarity or frequency step between successive frequencies
     -> Octaves a          -- ^ The number of octaves to add
