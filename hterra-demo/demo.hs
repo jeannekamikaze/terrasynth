@@ -16,6 +16,7 @@ fBmPerlin :: Backend (Image Float) -> Seed -> CellSize
           -> Width -> Height -> FilePath -> IO ()
 fBmPerlin run seed cs hu l o w h file =
           let img = image run (fBm (perlin seed cs) hu l o) w h
+              --img = fBmImage run (perlin seed cs) hu l o w h
           in writePGM file img
 
 perlinImage :: Backend (Image Float)-> Seed -> CellSize -> Width -> Height -> FilePath -> IO ()

@@ -108,7 +108,7 @@ fBm :: (RealFrac a, IsFloating a, Ord a, Elt a)
     -> Octaves            -- ^ The number of octaves to add
     -> Noise (Point2 a) a
 {-fBm noise h' l' o' p = A.fold1 (+) vals ! index0 / maxfBm
-    where vals   = A.zipWith (*) amps noises
+    where vals   = noises -- A.zipWith (*) amps noises
           amps   = A.map (\x -> gain**x) nums
           gain   = l ** (-2*h)
           noises = A.map noise points
