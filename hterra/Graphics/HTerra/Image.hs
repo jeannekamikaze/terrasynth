@@ -9,6 +9,8 @@ module Graphics.HTerra.Image
     -- * Image creation
 ,   image
 ,   image'
+,   cellsImage
+,   cellsImage'
 ,   fBmImage
 ,   fBmImage'
 )
@@ -35,6 +37,19 @@ image' noise w h = A.generate (constant (Z:.w:.h)) $
        \ix -> let (Z:.x:.y) = unlift ix
               in noise . lift $ (A.fromIntegral x, A.fromIntegral y)
 
+cellsImage :: (IsNum a, IsNum b, Elt a, Elt b)
+           => Backend (Image b) -> Noise (Point2 a) b -> Octaves
+           -> Width -> Height -> Image b
+cellsImage run noise o w h = run $ cellsImage' noise o w h
+
+cellsImage' :: (IsNum a, IsNum b, Elt a, Elt b)
+            => Noise (Point2 a) b -> Octaves
+            -> Width -> Height -> Acc (Image b)
+cellsImage' noise o w h = fBm' o black
+            where fBm' 0 img = img
+                  fBm' i img = fBm' (i-1) $ A.zipWith (+) img (image' noise w h)
+                  black = A.generate (constant (Z:.w:.h)) $ \_ -> 0
+
 fBmImage :: (IsFloating a, Elt a)
          => Backend (Image a) -> Noise (Point2 a) a -> H a -> Lacunarity a -> Octaves
          -> Width -> Height -> Image a
@@ -58,11 +73,3 @@ geom r n = (1 - r**n) / (1-r)
 
 scale :: (IsNum a, Elt a) => Exp a -> Exp (Point2 a) -> Exp (Point2 a)
 scale s p = lift (s*x, s*y) where (x,y) = (A.fst p, A.snd p)
-
-cells' :: (IsNum a, IsNum b, Elt a, Elt b)
-       => Noise (Point2 a) b -> Octaves
-       -> Width -> Height -> Acc (Image b)
-cells' noise o w h = fBm' o black
-       where fBm' 0 img = img
-             fBm' i img = fBm' (i-1) $ A.zipWith (+) img (image' noise w h)
-             black = A.generate (constant (Z:.w:.h)) $ \_ -> 0

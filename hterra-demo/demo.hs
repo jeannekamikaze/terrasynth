@@ -11,6 +11,11 @@ import qualified Data.Array.Accelerate.CUDA as C
 import System.Console.CmdArgs
 import Prelude as P
 
+cells :: Backend (Image Float) -> Seed -> CellSize -> Octaves -> Width -> Height -> FilePath -> IO ()
+cells run seed cs o w h file =
+      let img = cellsImage run (perlin seed cs) o w h
+      in writePGM file img
+
 fBmPerlin :: Backend (Image Float) -> Seed -> CellSize
           -> H Float -> Lacunarity Float -> Octaves
           -> Width -> Height -> FilePath -> IO ()
@@ -27,7 +32,7 @@ perlinImage run seed cs w h file =
 gen cs x y = let cs' = constant cs in lift (x/cs', y/cs')
 
 data Runner = Interpreter | Cuda deriving (Data, Typeable, Show)
-data NoiseType = Perlin | Fbm deriving (Data, Typeable, Show)
+data NoiseType = Perlin | Fbm | Cells deriving (Data, Typeable, Show)
 
 data Demo = Demo
      { backend  :: Runner
@@ -45,7 +50,7 @@ data Demo = Demo
 defaultArgs = cmdArgsMode $ Demo
             { backend = Interpreter &= name "b" &= typ "Interpreter | Cuda"
                                     &= help "Accelerate backend"
-            , noise = Perlin        &= name "t" &= typ "Perlin | Fbm"
+            , noise = Perlin        &= name "t" &= typ "Perlin | Fbm | Cells"
                                     &= help "The type of noise"
             , seed = 123            &= name "s" &= help "Random seed"
             , cellSize = 64         &= name "c" &= help "Cell size"
@@ -65,3 +70,4 @@ main = do
      case noise of
           Perlin -> perlinImage (toBackend run) s cs w h file
           Fbm    -> fBmPerlin (toBackend run) s cs hu lacu noct w h file
+          Cells  -> cells (toBackend run) s cs noct w h file
