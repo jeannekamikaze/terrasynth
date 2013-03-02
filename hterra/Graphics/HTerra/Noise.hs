@@ -35,7 +35,7 @@ type Gradients a = Acc (Vector (Point2 a))
 type CellSize = Float
 type H a = a
 type Lacunarity a = a
-type Octaves a = a
+type Octaves = Int
 
 -- | A random number seed.
 type Seed = Int
@@ -105,23 +105,36 @@ fBm :: (RealFrac a, IsFloating a, Ord a, Elt a)
     => Noise (Point2 a) a -- ^ The basis noise function
     -> H a                -- ^ The Hurst exponent, a value between 0 and 1
     -> Lacunarity a       -- ^ The lacunarity or frequency step between successive frequencies
-    -> Octaves a          -- ^ The number of octaves to add
+    -> Octaves            -- ^ The number of octaves to add
     -> Noise (Point2 a) a
+{-fBm noise h' l' o' p = A.fold1 (+) vals ! index0 / maxfBm
+    where vals   = A.zipWith (*) amps noises
+          amps   = A.map (\x -> gain**x) nums
+          gain   = l ** (-2*h)
+          noises = A.map noise points
+          points = A.zipWith scale freqs $ A.fill (index1 o) p
+          freqs  = A.map (\x -> l**x) nums
+          nums   = A.generate (index1 o) $ \ix -> let (Z:.i) = unlift ix in A.fromIntegral i
+          maxfBm = geom gain (A.fromIntegral o)
+          h = constant h'
+          l = constant l'
+          o = constant o'-}
+
 fBm noise h l o p = foldl1' (+) vals / maxfBm
     where vals   = P.zipWith (*) amps noises
           amps   = P.map constant $ iterate (*gain) 1
           gain   = l ** (-2*h)
           noises = P.map noise points
-          points = P.zipWith scale freqs (P.replicate (P.floor o) p)
+          points = P.zipWith scale freqs (P.replicate o p)
           freqs  = P.map constant $ iterate (*l) 1
-          maxfBm = constant $ if gain == 1 then 1 else geom gain o
+          maxfBm = constant $ if gain == 1 then 1 else geom gain (P.fromIntegral o)
 
 {-fBm noise h' l' nocts p = fBm' nocts 1 1 0
     where h = constant h'
           l = constant l'
           gain' = l' ** (-2*h')
           gain = constant gain'
-          maxfBm = constant $ if gain' == 1 then 1 else geom gain' nocts
+          maxfBm = constant $ if gain' == 1 then 1 else geom gain' (P.fromIntegral nocts)
           fBm' o f a val
                | o <= 0 = val / maxfBm
                | otherwise = fBm' (o-1) (l*f) (a*gain) ((+val) . (*a) . noise . scale f $ p)-}

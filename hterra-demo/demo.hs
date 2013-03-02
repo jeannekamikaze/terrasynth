@@ -12,7 +12,7 @@ import System.Console.CmdArgs
 import Prelude as P
 
 fBmPerlin :: Backend (Image Float) -> Seed -> CellSize
-          -> H Float -> Lacunarity Float -> Octaves Float
+          -> H Float -> Lacunarity Float -> Octaves
           -> Width -> Height -> FilePath -> IO ()
 fBmPerlin run seed cs hu l o w h file =
           let img = image run (fBm (perlin seed cs) hu l o) w h
@@ -35,7 +35,7 @@ data Demo = Demo
      , cellSize :: Float
      , hurst    :: Float
      , lacu     :: Float
-     , noct     :: Float
+     , noct     :: Int
      , width    :: Int
      , height   :: Int
      , file     :: String
