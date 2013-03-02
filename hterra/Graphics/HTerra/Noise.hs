@@ -135,9 +135,10 @@ fBm noise h l o p = foldl1' (+) vals / maxfBm
           gain' = l' ** (-2*h')
           gain = constant gain'
           maxfBm = constant $ if gain' == 1 then 1 else geom gain' (P.fromIntegral nocts)
-          fBm' o f a val
-               | o <= 0 = val / maxfBm
-               | otherwise = fBm' (o-1) (l*f) (a*gain) ((+val) . (*a) . noise . scale f $ p)-}
+          fBm' 0 f a val = val / maxfBm
+          fBm' o f a val =
+               let val' = (+val) . (*a) . noise . scale f $ p
+               in val' `seq` fBm' (o-1) (l*f) (a*gain) val'-}
 
 geom r n = (1 - r**n) / (1-r)
 
