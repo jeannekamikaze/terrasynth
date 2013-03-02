@@ -75,13 +75,32 @@ __device__ float noise (const uchar* perms, const float2* grads, float x, float 
     return c;
 }
 
-__global__ void kernel_noise (const uchar* perms, const float2* grads, int w, int h, float s, float* image)
+__global__ void kernel_noise (const uchar* perms, const float2* grads, float s, int w, int h, float* image)
 {
     unsigned n = blockIdx.x * blockDim.x + threadIdx.x;
     unsigned x = n % w;
     unsigned y = n / w;
     float* p = image + n;
     *p = noise (perms, grads, (float)x*s, (float)y*s);
+}
+
+__global__ void kernel_fbm
+(const uchar* perms, const float2* grads, float octaves, float lacunarity, float gain, float fbm_max, float s, int w, int h, float* image)
+{
+    unsigned n = blockIdx.x * blockDim.x + threadIdx.x;
+    unsigned x = n % w;
+    unsigned y = n / w;
+    float* p = image + n;
+
+    *p = 0.0f;
+    float f = 1.0f;
+    float a = 1.0f;
+    for (int n = 0; n < octaves; ++n) {
+        *p += a * noise (perms, grads, (float)x*f*s, (float)y*f*s);
+        f *= lacunarity;
+        a *= gain;
+    }
+    *p /= fbm_max;
 }
 
 // Host Code
@@ -138,7 +157,7 @@ void noise (int seed, float* h_image, int w, int h, int cell_size, int freq)
     const float s = (float) freq / (float) cell_size;
     unsigned tpb = 1024;
     unsigned nb = n / tpb;
-    kernel_noise<<<nb,tpb>>>(d_perms, d_grads, w, h, s, d_image);
+    kernel_noise<<<nb,tpb>>>(d_perms, d_grads, s, w, h, d_image);
 
     cudaMemcpy (h_image, d_image, nf, cudaMemcpyDeviceToHost);
     cudaFree (h_image);
@@ -151,24 +170,24 @@ float geom (float r, float n)
     return (1.0f - pow(r,n)) / (1.0f - r);
 }
 
-void fbm (int seed, float* image, int w, int h, int cell_size, float lacunarity, float H, int octaves)
+void fbm (int seed, float* h_image, int w, int h, int cell_size, float lacunarity, float H, int octaves)
 {
-    /*setup (seed);
-    const float s = 1.0f / cell_size;
+    setup (seed);
+
+    unsigned n = (unsigned) w * (unsigned) h;
+    unsigned nf = n * sizeof(float);
+    float* d_image;
+    cudaMalloc ((void**)&d_image, nf);
+
+    const float s = 1.0f / (float) cell_size;
     const float gain = pow (lacunarity, -2*H);
     const float fbm_max = gain == 1.0f ? 1.0f : geom (gain, octaves);
-    for (int i = 0; i < h; ++i) {
-        for (int j = 0; j < w; ++j) {
-            float* p = image++;
-            float f = 1.0f;
-            float a = 1.0f;
-            for (int x = 0; x < octaves; ++x) {
-                *p += a * noise ((float)j*f*s, (float)i*f*s);
-                f *= lacunarity;
-                a *= gain;
-            }
-            *p /= fbm_max;
-        }
-    }
-    */
+    unsigned tpb = 1024;
+    unsigned nb = n / tpb;
+    kernel_fbm<<<nb,tpb>>>(d_perms, d_grads, octaves, lacunarity, gain, fbm_max, s, w, h, d_image);
+
+    cudaMemcpy (h_image, d_image, nf, cudaMemcpyDeviceToHost);
+    cudaFree (h_image);
+
+    clean();
 }
