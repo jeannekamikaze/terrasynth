@@ -13,6 +13,8 @@ class HeightMap
 public:
     
     HeightMap (const OGDT::TImage<U8,1>&);
+
+    HeightMap (const OGDT::TImage<float,1>&);
     
     ~HeightMap ();
     

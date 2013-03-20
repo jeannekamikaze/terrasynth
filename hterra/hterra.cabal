@@ -24,6 +24,7 @@ library
                        accelerate,
                        accelerate-cuda,
                        accelerate-io,
+                       bytestring,
                        random
 
   build-tools: hsc2hs

@@ -7,14 +7,21 @@ module Graphics.HTerra.Noise
 ,   Perms
 ,   Gradients
 ,   CellSize
-,   H
+,   Hurst
 ,   Lacunarity
 ,   Octaves
 ,   Seed
     -- * Noise functions
+    -- ** Perlin noise
+,   PerlinParams
 ,   perlin
-,   perlin'
+,   perlinParams
+,   perms
+,   grads
+    -- ** Fractional Brownian Motion
+,   FbmParams
 ,   fBm
+,   fBmParams
 )
 where
 
@@ -27,36 +34,39 @@ import System.Random
 import Prelude as P
 
 type Point2 a = (a,a)
+type Point3 a = (a,a,a)
 type Noise a b = Exp a -> Exp b
 
-type Perms a = Acc (Vector a)
-type Gradients a = Acc (Vector (Point2 a))
+type Perms a = Vector a
+type Gradients a = Vector (Point2 a)
 
 type CellSize = Float
-type H a = a
-type Lacunarity a = a
+type Hurst = Float
+type Lacunarity = Float
 type Octaves = Int
 
 -- | A random number seed.
 type Seed = Int
 
--- Create a permutation table of N values.
-perms :: (Num a, Eq a, Integral a, Random a) => Seed -> Int -> [a]
-perms seed n = fmap P.fromIntegral . P.take n $ randomRs (0,n-1) (mkStdGen seed)
+-- | Create a permutation table of N values.
+perms :: (Integral a, Random a, Elt a) => Seed -> Int -> Perms a
+perms seed n = A.fromList (Z:.n) . fmap P.fromIntegral . P.take n $
+      randomRs (0,n-1) (mkStdGen seed)
 
--- Create a list of N gradient vectors along the unit circle.
-grads :: Int -> [Point2 Float]
-grads i =
-      let step = 2*pi / (P.fromIntegral i)
-          grads' a = (cos a, sin a) : grads' (a+step)
-      in P.take i $ grads' 0
+-- | Create a table of N gradient vectors along the unit circle.
+grads :: (Floating a, Elt a) => Int -> Gradients a
+grads n = A.fromList (Z:.n) $ grads' n
+      where grads' i =
+                   let step = 2*pi / (P.fromIntegral i)
+                       grads' a = (cos a, sin a) : grads' (a+step)
+                   in P.take i $ grads' 0
 
 -- 1D permutation table index function.
-perm :: (Elt a, IsIntegral b, Elt b) => Perms a -> Exp b -> Exp a
+perm :: (Elt a, IsIntegral b, Elt b) => Acc (Perms a) -> Exp b -> Exp a
 perm perms x = perms ! index1 (A.fromIntegral x .&. 255)
 
 -- 2D permutation table index function.
-index :: (IsIntegral a, Elt a) => Perms a -> Exp (Point2 Int) -> Exp a
+index :: (IsIntegral a, Elt a) => Acc (Perms a) -> Exp (Point2 Int) -> Exp a
 index ps p = perm' (x' + perm' y')
       where perm' = perm ps
             (x,y) = unlift p :: (Exp Int, Exp Int)
@@ -64,81 +74,100 @@ index ps p = perm' (x' + perm' y')
             y' = A.fromIntegral y
 
 -- Index the gradients vector.
-grad :: (Elt a, IsIntegral b, Elt b) => Gradients a -> Exp b -> Exp (Point2 a)
+grad :: (Elt a, IsIntegral b, Elt b) => Acc (Gradients a) -> Exp b -> Exp (Point2 a)
 grad grads i = grads ! index1 (A.fromIntegral i)
 
-perlin :: Seed -> CellSize -> Noise (Point2 Float) Float
-perlin seed cs =
-       let perms' = use . A.fromList (Z:.256) $ perms seed 256
-           grads' = use . A.fromList (Z:.256) $ grads 256
-       in perlin' perms' grads' scurve cs
+-- | Perlin noise parameters.
+type PerlinParams = (Perms Word8, Gradients Float, Vector Float)
 
-perlin' :: Perms Word8 -> Gradients Float -> Smooth Float -> CellSize -> Noise (Point2 Float) Float
-perlin' perms grads smooth cs p' =
-        let p = scale (1 / constant cs) p'
-            -- Compute gradients
-            p0  = floor' p
-            p1  = p0 `plus` constant (1,0)
-            p2  = p0 `plus` constant (0,1)
-            p3  = p0 `plus` constant (1,1)
-            idx = index perms
-            g0  = grad grads $ idx p0
-            g1  = grad grads $ idx p1
-            g2  = grad grads $ idx p2
-            g3  = grad grads $ idx p3
-            -- Compute weights
-            s   = g0 `dot` (p `minus` toFloat p0)
-            t   = g1 `dot` (p `minus` toFloat p1)
-            u   = g2 `dot` (p `minus` toFloat p2)
-            v   = g3 `dot` (p `minus` toFloat p3)
-            -- Interpolate values
-            (x,y)   = unlift p :: (Exp Float, Exp Float)
-            (x0,y0) = unlift (toFloat p0) :: (Exp Float, Exp Float)
-            sx  = smooth (x-x0)
-            sy  = smooth (y-y0)
-            a   = lerp sx s t
-            b   = lerp sx u v
-            c   = lerp sy a b
-        in  c*0.5 + 0.5
+perlinParams :: Perms Word8 -> Gradients Float -> CellSize -> PerlinParams
+perlinParams ps gs cs = (ps, gs, A.fromList (Z:.1) [cs])
 
-fBm :: (RealFrac a, IsFloating a, Ord a, Elt a)
-    => Noise (Point2 a) a -- ^ The basis noise function
-    -> H a                -- ^ The Hurst exponent, a value between 0 and 1
-    -> Lacunarity a       -- ^ The lacunarity or frequency step between successive frequencies
-    -> Octaves            -- ^ The number of octaves to add
-    -> Noise (Point2 a) a
-{-fBm noise h' l' o' p = A.fold1 (+) vals ! index0 / maxfBm
-    where vals   = noises -- A.zipWith (*) amps noises
-          amps   = A.map (\x -> gain**x) nums
-          gain   = l ** (-2*h)
-          noises = A.map noise points
-          points = A.zipWith scale freqs $ A.fill (index1 o) p
-          freqs  = A.map (\x -> l**x) nums
-          nums   = A.generate (index1 o) $ \ix -> let (Z:.i) = unlift ix in A.fromIntegral i
+-- | Perlin noise function.
+perlin :: Smooth Float -> Acc PerlinParams -> Noise (Point2 Float) Float
+perlin smooth accParams p' =
+       let (perms, grads, params) = unlift accParams
+           cs  = params ! index1 0
+           p   = scale (1 / cs) p'
+           -- Compute gradients
+           p0  = floor' p
+           p1  = p0 `plus` constant (1,0)
+           p2  = p0 `plus` constant (0,1)
+           p3  = p0 `plus` constant (1,1)
+           idx = index perms
+           g0  = grad grads $ idx p0
+           g1  = grad grads $ idx p1
+           g2  = grad grads $ idx p2
+           g3  = grad grads $ idx p3
+           -- Compute weights
+           s   = g0 `dot` (p `minus` toFloat p0)
+           t   = g1 `dot` (p `minus` toFloat p1)
+           u   = g2 `dot` (p `minus` toFloat p2)
+           v   = g3 `dot` (p `minus` toFloat p3)
+           -- Interpolate values
+           (x,y)   = unlift p :: (Exp Float, Exp Float)
+           (x0,y0) = unlift (toFloat p0) :: (Exp Float, Exp Float)
+           sx  = smooth (x-x0)
+           sy  = smooth (y-y0)
+           a   = lerp sx s t
+           b   = lerp sx u v
+           c   = lerp sy a b
+       in  c*0.5 + 0.5
+
+-- | fBm parameters.
+type FbmParams a = (a, Vector Float)
+
+fBmParams :: a -> Hurst -> Lacunarity -> Octaves -> FbmParams a
+fBmParams c h l o = (c, A.fromList (Z:.3) [h, l, P.fromIntegral o])
+
+-- | fBm noise function.
+fBm :: (Arrays c)
+    => (Acc c -> Noise (Point2 Float) Float) -- ^ The basis noise function
+    -> Acc (FbmParams c)
+    -> Noise (Point3 Float) Float
+
+fBm noise' accParams p' = (/maxfBm) . (*a) . noise . scale f $ lift (x,y)
+    where (basisParams, params) = unlift accParams
+          h = params ! index1 0
+          l = params ! index1 1
+          o = params ! index1 2
+          f = l ** z
+          a = l ** (-2*h*z)
+          --a = gain ** z
+          gain = l ** (-2*h)
+          maxfBm = geom gain o
+          noise = noise' basisParams
+          (x,y,z) = unlift p' :: (Exp Float, Exp Float, Exp Float)
+
+{-fBm noise' accParams p = fBm' o 1 1 0 -- Prelude.Eq.== applied to EDSL types
+    where (basisParams, params) = unlift accParams
+          h  = params ! index1 0
+          l  = params ! index1 1
+          o  = A.floor $ params ! index1 2 :: Exp Int
+          noise = noise' basisParams
+          gain = l ** (-2*h)
           maxfBm = geom gain (A.fromIntegral o)
-          h = constant h'
-          l = constant l'
-          o = constant o'-}
-
-fBm noise h l o p = foldl1' (+) vals / maxfBm
-    where vals   = P.zipWith (*) amps noises
-          amps   = P.map constant $ iterate (*gain) 1
-          gain   = l ** (-2*h)
-          noises = P.map noise points
-          points = P.zipWith scale freqs (P.replicate o p)
-          freqs  = P.map constant $ iterate (*l) 1
-          maxfBm = constant $ if gain == 1 then 1 else geom gain (P.fromIntegral o)
-
-{-fBm noise h' l' nocts p = fBm' nocts 1 1 0
-    where h = constant h'
-          l = constant l'
-          gain' = l' ** (-2*h')
-          gain = constant gain'
-          maxfBm = constant $ if gain' == 1 then 1 else geom gain' (P.fromIntegral nocts)
+          --maxfBm = if gain == 1 then 1 else geom gain (A.fromIntegral o)
           fBm' 0 f a val = val / maxfBm
           fBm' o f a val =
                let val' = (+val) . (*a) . noise . scale f $ p
                in val' `seq` fBm' (o-1) (l*f) (a*gain) val'-}
+
+{-fBm noise' accParams p = -- Shared Exp evaluation
+    let (basisParams, params) = unlift accParams
+        h  = params ! index1 0
+        l  = params ! index1 1
+        o  = A.floor $ params ! index1 2
+        vals   = A.zipWith (*) amps noises
+        amps   = A.map (\x -> gain**x) nums
+        gain   = l ** (-2*h)
+        noises = A.map noise points
+        points = A.zipWith scale freqs $ A.fill (index1 o) p
+        freqs  = A.map (\x -> l**x) nums
+        nums   = A.generate (index1 o) $ \ix -> let (Z:.i) = unlift ix in A.fromIntegral i
+        maxfBm = geom gain (A.fromIntegral o)
+        noise  = noise' basisParams
+    in A.fold1 (+) vals ! index0 / maxfBm-}
 
 geom r n = (1 - r**n) / (1-r)
 
