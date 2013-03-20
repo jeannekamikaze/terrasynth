@@ -64,7 +64,7 @@ int main (int argc, char** argv)
     float lacunarity = 2.0f;
     float H = 0.5f;
 
-    exec_type_t exec_type; 
+    exec_type_t exec_type;
 
     if (argc < 2 || strcmp(argv[1], "--help") == 0) {
         fprintf (stderr, "Usage: %s <output file> [options]\n", argv[0]);
