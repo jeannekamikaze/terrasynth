@@ -24,6 +24,7 @@ fBmPerlin seed cs hu l o w h file =
               basisParams = perlinParams ps gs cs
               params = fBmParams basisParams hu l o
               img = fBmImage C.run1 (perlin scurve) o w h params
+              --img = image C.run1 (fBm $ perlin scurve) w h params
           in writePGM file img
 
 perlinImage :: Seed -> CellSize -> Width -> Height -> FilePath -> IO ()

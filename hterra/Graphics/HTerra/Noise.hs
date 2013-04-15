@@ -14,14 +14,15 @@ module Graphics.HTerra.Noise
     -- * Noise functions
     -- ** Perlin noise
 ,   PerlinParams
-,   perlin
 ,   perlinParams
 ,   perms
 ,   grads
+,   perlin
     -- ** Fractional Brownian Motion
 ,   FbmParams
-,   fBm
 ,   fBmParams
+,   fBm
+,   fBm'
 )
 where
 
@@ -122,22 +123,41 @@ fBmParams c h l o = (c, A.fromList (Z:.3) [h, l, P.fromIntegral o])
 
 -- | fBm noise function.
 fBm :: (Arrays c)
-    => (Acc c -> Noise (Point2 Float) Float) -- ^ The basis noise function
+    => (Acc c -> Noise (Point2 Float) Float)
     -> Acc (FbmParams c)
-    -> Noise (Point3 Float) Float
+    -> Noise (Point2 Float) Float
 
-fBm noise' accParams p' = (/maxfBm) . (*a) . noise . scale f $ lift (x,y)
+fBm noise' accParams p = fBm' o 1 1 0
     where (basisParams, params) = unlift accParams
-          h = params ! index1 0
-          l = params ! index1 1
-          o = params ! index1 2
-          f = l ** z
-          a = l ** (-2*h*z)
-          --a = gain ** z
-          gain = l ** (-2*h)
-          maxfBm = geom gain o
+          h  = params ! index1 0
+          l  = params ! index1 1
+          o  = A.floor $ params ! index1 2 :: Exp Int
           noise = noise' basisParams
-          (x,y,z) = unlift p' :: (Exp Float, Exp Float, Exp Float)
+          gain = l ** (-2*h)
+          maxfBm = geom gain (A.fromIntegral o)
+          --maxfBm = if gain == 1 then 1 else geom gain (A.fromIntegral o)
+          fBm' o f a val = o <=* 0 ?
+               ( val / maxfBm
+               , fBm' (o-1) (l*f) (a*gain) $ (+val) . (*a) . noise . scale f $ p)
+
+-- | fBm noise function.
+fBm' :: (Arrays c)
+     => (Acc c -> Noise (Point2 Float) Float) -- ^ The basis noise function
+     -> Acc (FbmParams c)
+     -> Noise (Point3 Float) Float
+
+fBm' noise' accParams p' = (/maxfBm) . (*a) . noise . scale f $ lift (x,y)
+     where (basisParams, params) = unlift accParams
+           h = params ! index1 0
+           l = params ! index1 1
+           o = params ! index1 2
+           f = l ** z
+           a = l ** (-2*h*z)
+           --a = gain ** z
+           gain = l ** (-2*h)
+           maxfBm = geom gain o
+           noise = noise' basisParams
+           (x,y,z) = unlift p' :: (Exp Float, Exp Float, Exp Float)
 
 {-fBm noise' accParams p = fBm' o 1 1 0 -- Prelude.Eq.== applied to EDSL types
     where (basisParams, params) = unlift accParams

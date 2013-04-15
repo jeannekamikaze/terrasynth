@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<session version="1" name="fbm-cuda-n8" hscale="8.458365215077015E-6">
+<executable file="/home/jeanne/programming/terrasynth/cuda/gradient" cwd="/home/jeanne/programming/terrasynth/cuda" args="foo.pgm -t fBm -w 2048 -h 2048 -n 8" profileonstart="true" concurrentkernels="true"><envs></envs></executable>
+<expert><columnprops></columnprops>
+</expert>
+<analysis activescope="APPLICATION"><visitedstages><stage name="TIMELINE"/></visitedstages></analysis>
+<vruler width="200"/>
+<hruler>
+</hruler>
+<timelinestate>
+<timeline pathname="9650" kind="PROCESS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="9650/-1220528384" kind="THREAD" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="9650/-1220528384/Runtime API" kind="RUNTIME" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="9650/-1220528384/Driver API" kind="DRIVER" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="9650/Profiling Overhead" kind="OVERHEADS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460" kind="DEVICE" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1" kind="CONTEXT" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/MemCpy (HtoD)" kind="MEMCPY_HTOD" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/MemCpy (DtoH)" kind="MEMCPY_DTOH" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Compute" kind="KERNELS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Compute/kernel_fbm(unsigned char const *, float2 const *, float, float, float, float, float, int, int, float*)" kind="KERNEL" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Streams" kind="STREAMS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Streams/2" kind="STREAM" containerstate="OPEN_ALL" filtered="false"/>
+</timelinestate>
+<pdm>
+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</pdm>
+</session>

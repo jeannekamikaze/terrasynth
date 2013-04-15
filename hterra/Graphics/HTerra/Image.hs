@@ -57,7 +57,7 @@ fBmImage' :: (Arrays c)
           => (Acc c -> Noise (Point2 Float) Float)
           -> Octaves -> Width -> Height -> Acc (FbmParams c) -> Acc (Image Float)
 fBmImage' noise' o w h params =
-          let noise = fBm noise' params
+          let noise = fBm' noise' params
           in A.fold1 (+) $ A.generate (constant (Z:.w:.h:.o)) $
              \ix -> let (Z:.x:.y:.z) = unlift ix :: (Z :. Exp Int :. Exp Int :. Exp Int)
                     in noise . lift $ (A.fromIntegral x, A.fromIntegral y, A.fromIntegral z)

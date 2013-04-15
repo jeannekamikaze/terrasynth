@@ -14,4 +14,4 @@ executable hterra-demo
     main-is:            demo.hs
     buildable:          True
     ghc-options:        -O2 -threaded
-    ghc-prof-options:   -rtsopts -fprof-auto -fprof-cafs
+    ghc-prof-options:   -O2 -threaded -rtsopts -fprof-auto -fprof-cafs
