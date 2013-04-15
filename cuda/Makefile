@@ -1,4 +1,4 @@
-CFLAGS = -DDEBUG
+CFLAGS = -O2 -DDEBUG
 NVCC_FLAGS = -O2
 
 gradient: main.o gradient-cuda
