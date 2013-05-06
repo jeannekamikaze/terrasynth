@@ -1,4 +1,3 @@
-{-# LANGUAGE TypeOperators #-}
 module Graphics.HTerra.Noise
 (
     -- * Data types
@@ -22,6 +21,8 @@ module Graphics.HTerra.Noise
 ,   FbmParams
 ,   fBmParams
 ,   fBm
+,   FbmParams'
+,   fBmParams'
 ,   fBm'
 )
 where
@@ -118,27 +119,33 @@ perlin smooth accParams p' =
 -- | fBm parameters.
 type FbmParams a = (a, Vector Float)
 
-fBmParams :: a -> Hurst -> Lacunarity -> Octaves -> FbmParams a
-fBmParams c h l o = (c, A.fromList (Z:.3) [h, l, P.fromIntegral o])
+fBmParams :: a -> Hurst -> Lacunarity -> FbmParams a
+fBmParams c h l = (c, A.fromList (Z:.2) [h, l])
 
 -- | fBm noise function.
 fBm :: (Arrays c)
-    => (Acc c -> Noise (Point2 Float) Float)
+    => Octaves
+    -> (Acc c -> Noise (Point2 Float) Float)
     -> Acc (FbmParams c)
     -> Noise (Point2 Float) Float
 
-fBm noise' accParams p = fBm' o 1 1 0
+fBm o noise' accParams p = iter o 1 1 0
     where (basisParams, params) = unlift accParams
           h  = params ! index1 0
           l  = params ! index1 1
-          o  = A.floor $ params ! index1 2 :: Exp Int
+          o' = constant o
           noise = noise' basisParams
           gain = l ** (-2*h)
-          maxfBm = geom gain (A.fromIntegral o)
-          --maxfBm = if gain == 1 then 1 else geom gain (A.fromIntegral o)
-          fBm' o f a val = o <=* 0 ?
-               ( val / maxfBm
-               , fBm' (o-1) (l*f) (a*gain) $ (+val) . (*a) . noise . scale f $ p)
+          maxfBm = gain ==* 1 ? (1, geom gain (P.fromIntegral o))
+          iter o f a val
+               | o == 0 = val / maxfBm
+               | otherwise =  iter (o-1) (l*f) (a*gain) $ (+val) . (*a) . noise . scale f $ p
+
+-- | fBm' parameters.
+type FbmParams' a = (a, Vector Float)
+
+fBmParams' :: a -> Hurst -> Lacunarity -> Octaves -> FbmParams a
+fBmParams' c h l o = (c, A.fromList (Z:.3) [h, l, P.fromIntegral o])
 
 -- | fBm noise function.
 fBm' :: (Arrays c)
@@ -153,41 +160,10 @@ fBm' noise' accParams p' = (/maxfBm) . (*a) . noise . scale f $ lift (x,y)
            o = params ! index1 2
            f = l ** z
            a = l ** (-2*h*z)
-           --a = gain ** z
            gain = l ** (-2*h)
-           maxfBm = geom gain o
+           maxfBm = gain ==* 1 ? (1, geom gain o)
            noise = noise' basisParams
            (x,y,z) = unlift p' :: (Exp Float, Exp Float, Exp Float)
-
-{-fBm noise' accParams p = fBm' o 1 1 0 -- Prelude.Eq.== applied to EDSL types
-    where (basisParams, params) = unlift accParams
-          h  = params ! index1 0
-          l  = params ! index1 1
-          o  = A.floor $ params ! index1 2 :: Exp Int
-          noise = noise' basisParams
-          gain = l ** (-2*h)
-          maxfBm = geom gain (A.fromIntegral o)
-          --maxfBm = if gain == 1 then 1 else geom gain (A.fromIntegral o)
-          fBm' 0 f a val = val / maxfBm
-          fBm' o f a val =
-               let val' = (+val) . (*a) . noise . scale f $ p
-               in val' `seq` fBm' (o-1) (l*f) (a*gain) val'-}
-
-{-fBm noise' accParams p = -- Shared Exp evaluation
-    let (basisParams, params) = unlift accParams
-        h  = params ! index1 0
-        l  = params ! index1 1
-        o  = A.floor $ params ! index1 2
-        vals   = A.zipWith (*) amps noises
-        amps   = A.map (\x -> gain**x) nums
-        gain   = l ** (-2*h)
-        noises = A.map noise points
-        points = A.zipWith scale freqs $ A.fill (index1 o) p
-        freqs  = A.map (\x -> l**x) nums
-        nums   = A.generate (index1 o) $ \ix -> let (Z:.i) = unlift ix in A.fromIntegral i
-        maxfBm = geom gain (A.fromIntegral o)
-        noise  = noise' basisParams
-    in A.fold1 (+) vals ! index0 / maxfBm-}
 
 geom r n = (1 - r**n) / (1-r)
 
