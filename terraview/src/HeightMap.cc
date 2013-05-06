@@ -21,9 +21,17 @@ struct HeightMap::_impl
     int rows;
 };
 
-template <class T>
-void compute_positions (const OGDT::TImage<T,1>& image, vert* verts)
+HeightMap::HeightMap (const OGDT::TImage<U8,1>& image) : impl (new _impl)
 {
+    int width = image.width();
+    int height = image.height();
+    int across = width*2; // Number of vertices across.
+    int rows = height-1; // Number of rows.
+    int n = across * rows; // Total number of verts.
+    vert* verts = new vert[n];
+
+    // Compute vertex positions.
+
     float wf = (float) width;
     float hf = (float) height;
     float xstart  = 1.0f / wf / 2.0f;
@@ -44,14 +52,10 @@ void compute_positions (const OGDT::TImage<T,1>& image, vert* verts)
             verts[i+1].z = zf;
         }
     }
-}
 
-template <class T>
-void compute_normals (const OGDT::TImage<T,1>& image, vert* verts, int n)
-{
-    // Compute smooth normals
-    
-    int i = 0;
+    // Compute smooth normals.
+
+    i = 0;
 
     for (int z = 0; z < height-1; ++z)
     {
@@ -130,18 +134,14 @@ void compute_normals (const OGDT::TImage<T,1>& image, vert* verts, int n)
     {
         verts[i].n.normalise();
     }
-}
 
-HeightMap::HeightMap (const OGDT::TImage<U8,1>& image) : impl (new _impl)
-{
-    int width = image.width();
-    int height = image.height();
-    int across = width*2; // Number of vertices across.
-    int rows = height-1; // Number of rows.
-    int n = across * rows; // Total number of verts.
-    vert* verts = new vert[n];
 
-    compute_normals (image, verts, n);
+    /*for (int i = 0; i < n; ++i)
+    {
+        printf ("V (%3.2f, %3.2f) N (%3.2f, %3.2f, %3.2f)\n",
+            verts[i].x, verts[i].z, verts[i].n.x, verts[i].n.y, verts[i].n.z);
+    }
+    */
 
     glGenVertexArrays (1, &impl->vao);
     glBindVertexArray (impl->vao);
@@ -161,10 +161,6 @@ HeightMap::HeightMap (const OGDT::TImage<U8,1>& image) : impl (new _impl)
 
     impl->across = across;
     impl->rows = rows;
-}
-
-HeightMap (const OGDT::TImage<float,1>& image) : impl (new _impl)
-{
 }
 
 HeightMap::~HeightMap ()

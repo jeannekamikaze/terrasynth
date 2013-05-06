@@ -1,8 +1,8 @@
 #include "HmApp.h"
 #include "HeightMap.h"
 #include <OGDT/gl.h>
-#include <OGDT/gl_utils.h>
-#include <OGDT/Image.h>
+#include <OGDT/gl_utils.hpp>
+#include <OGDT/Image.hpp>
 #include <OGDT/math/Camera.h>
 #include <OGDT/math/vec3.h>
 #include <cstdio>

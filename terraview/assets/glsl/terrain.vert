@@ -17,8 +17,9 @@ void main ()
 	float y = texture (heightmap, VertexPosition).r;
 	vec4 v = ModelView * vec4 (VertexPosition.x, y, -VertexPosition.y, 1.0);
 
-        Position = vec3 (v);
+    Position = vec3 (v);
 	Normal = NormalMat * VertexNormal;
 
 	gl_Position = Projection * v;
 }
+
