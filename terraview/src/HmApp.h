@@ -12,6 +12,8 @@ class HmApp : public OGDT::Application
     HmApp (const HmApp&);
     HmApp& operator= (const HmApp&);
 
+    void updateCamera ();
+
     void setHeightMap (const char *path);
 
 public:
