@@ -16,7 +16,7 @@ cells run seed cs o w h file =
       in writePGM file img-}
 cells = undefined
 
-fBmPerlin :: Seed -> CellSize -> Hurst -> Lacunarity -> Octaves -> Width -> Height
+fBmPerlin :: Seed -> CellSize Float -> Hurst Float -> Lacunarity Float -> Octaves -> Width -> Height
            -> FilePath -> IO ()
 fBmPerlin seed cs hu l o w h file =
           let ps  = perms seed 256
@@ -26,7 +26,7 @@ fBmPerlin seed cs hu l o w h file =
               img = image C.run1 (fBm o $ perlin scurve) w h params
           in writePGM file img
 
-fBmPerlin' :: Seed -> CellSize -> Hurst -> Lacunarity -> Octaves -> Width -> Height
+fBmPerlin' :: Seed -> CellSize Float -> Hurst Float -> Lacunarity Float -> Octaves -> Width -> Height
            -> FilePath -> IO ()
 fBmPerlin' seed cs hu l o w h file =
            let ps  = perms seed 256
@@ -36,7 +36,7 @@ fBmPerlin' seed cs hu l o w h file =
                img = fBmImage C.run1 (perlin scurve) o w h params
            in writePGM file img
 
-perlinImage :: Seed -> CellSize -> Width -> Height -> FilePath -> IO ()
+perlinImage :: Seed -> CellSize Float -> Width -> Height -> FilePath -> IO ()
 perlinImage seed cs w h file =
             let ps  = perms seed 256
                 gs  =  grads 256

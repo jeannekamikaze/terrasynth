@@ -42,9 +42,9 @@ type Noise a b = Exp a -> Exp b
 type Perms a = Vector a
 type Gradients a = Vector (Point2 a)
 
-type CellSize = Float
-type Hurst = Float
-type Lacunarity = Float
+type CellSize a = a
+type Hurst a = a
+type Lacunarity a = a
 type Octaves = Int
 
 -- | A random number seed.
@@ -80,13 +80,13 @@ grad :: (Elt a, IsIntegral b, Elt b) => Acc (Gradients a) -> Exp b -> Exp (Point
 grad grads i = grads ! index1 (A.fromIntegral i)
 
 -- | Perlin noise parameters.
-type PerlinParams = (Perms Word8, Gradients Float, Vector Float)
+type PerlinParams a = (Perms Word8, Gradients a, Vector a)
 
-perlinParams :: Perms Word8 -> Gradients Float -> CellSize -> PerlinParams
+perlinParams :: Elt a => Perms Word8 -> Gradients a -> CellSize a -> PerlinParams a
 perlinParams ps gs cs = (ps, gs, A.fromList (Z:.1) [cs])
 
 -- | Perlin noise function.
-perlin :: Smooth Float -> Acc PerlinParams -> Noise (Point2 Float) Float
+perlin :: (IsFloating a, Elt a) => Smooth a -> Acc (PerlinParams a) -> Noise (Point2 a) a
 perlin smooth accParams p' =
        let (perms, grads, params) = unlift accParams
            cs  = params ! index1 0
@@ -107,8 +107,8 @@ perlin smooth accParams p' =
            u   = g2 `dot` (p `minus` toFloat p2)
            v   = g3 `dot` (p `minus` toFloat p3)
            -- Interpolate values
-           (x,y)   = unlift p :: (Exp Float, Exp Float)
-           (x0,y0) = unlift (toFloat p0) :: (Exp Float, Exp Float)
+           (x,y)   = unlift p
+           (x0,y0) = unlift (toFloat p0)
            sx  = smooth (x-x0)
            sy  = smooth (y-y0)
            a   = lerp sx s t
@@ -117,17 +117,17 @@ perlin smooth accParams p' =
        in  c*0.5 + 0.5
 
 -- | fBm parameters.
-type FbmParams a = (a, Vector Float)
+type FbmParams c a = (c, Vector a)
 
-fBmParams :: a -> Hurst -> Lacunarity -> FbmParams a
+fBmParams :: Elt a => c -> Hurst a -> Lacunarity a -> FbmParams c a
 fBmParams c h l = (c, A.fromList (Z:.2) [h, l])
 
 -- | fBm noise function.
-fBm :: (Arrays c)
+fBm :: (IsFloating a, Elt a, Arrays c)
     => Octaves
-    -> (Acc c -> Noise (Point2 Float) Float)
-    -> Acc (FbmParams c)
-    -> Noise (Point2 Float) Float
+    -> (Acc c -> Noise (Point2 a) a)
+    -> Acc (FbmParams c a)
+    -> Noise (Point2 a) a
 
 fBm o noise' accParams p = iter o 1 1 0
     where (basisParams, params) = unlift accParams
@@ -142,38 +142,43 @@ fBm o noise' accParams p = iter o 1 1 0
                | otherwise =  iter (o-1) (l*f) (a*gain) $ (+val) . (*a) . noise . scale f $ p
 
 -- | fBm' parameters.
-type FbmParams' a = (a, Vector Float)
+type FbmParams' c a = (c, Vector a)
 
-fBmParams' :: a -> Hurst -> Lacunarity -> Octaves -> FbmParams a
+fBmParams' :: (IsFloating a, Elt a) => c -> Hurst a -> Lacunarity a -> Octaves -> FbmParams' c a
 fBmParams' c h l o = (c, A.fromList (Z:.3) [h, l, P.fromIntegral o])
 
 -- | fBm noise function.
-fBm' :: (Arrays c)
-     => (Acc c -> Noise (Point2 Float) Float) -- ^ The basis noise function
-     -> Acc (FbmParams c)
-     -> Noise (Point3 Float) Float
+fBm' :: (IsFloating a, Elt a, Arrays c)
+     => (Acc c -> Noise (Point2 a) a) -- ^ The basis noise function
+     -> Acc (FbmParams' c a)
+     -> Noise (Point3 a) a
 
-fBm' noise' accParams p' = (/maxfBm) . (*a) . noise . scale f $ lift (x,y)
+fBm' noise' accParams p = (/maxfBm) . (*a) . noise . scale f . lift $ (x,y)
      where (basisParams, params) = unlift accParams
            h = params ! index1 0
            l = params ! index1 1
            o = params ! index1 2
-           f = l ** z
-           a = l ** (-2*h*z)
-           gain = l ** (-2*h)
-           maxfBm = gain ==* 1 ? (1, geom gain o)
+           (maxfBm, a, f, x, y) = iter h l o p
            noise = noise' basisParams
-           (x,y,z) = unlift p' :: (Exp Float, Exp Float, Exp Float)
+           iter :: (IsFloating a, Elt a)
+                => Exp (Hurst a) -> Exp (Lacunarity a) -> Exp a -> Exp (a,a,a)
+                -> (Exp a, Exp a, Exp a, Exp a, Exp a)
+           iter h l o p = (maxfBm, a, f, x, y)
+                where (x,y,z) = unlift p
+                      f = l ** z
+                      a = l ** (-2*h*z)
+                      gain = l ** (-2*h)
+                      maxfBm = gain ==* 1 ? (1, geom gain o)
 
 geom r n = (1 - r**n) / (1-r)
 
-floor' :: Exp (Point2 Float) -> Exp (Point2 Int)
+floor' :: (IsFloating a, Elt a) => Exp (Point2 a) -> Exp (Point2 Int)
 floor' p = lift (x',y')
-       where (x,y) = unlift p :: (Exp Float, Exp Float)
+       where (x,y) = unlift p
              x' = A.floor x
              y' = A.floor y
 
-toFloat :: Exp (Point2 Int) -> Exp (Point2 Float)
+toFloat :: (IsFloating a, Elt a) => Exp (Point2 Int) -> Exp (Point2 a)
 toFloat p = lift (x',y')
         where (x,y) = unlift p :: (Exp Int, Exp Int)
               x' = A.fromIntegral x
