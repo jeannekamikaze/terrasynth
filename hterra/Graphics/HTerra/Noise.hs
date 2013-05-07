@@ -59,7 +59,7 @@ perms seed n = A.fromList (Z:.n) . fmap P.fromIntegral . P.take n $
 grads :: (Floating a, Elt a) => Int -> Gradients a
 grads n = A.fromList (Z:.n) $ grads' n
       where grads' i =
-                   let step = 2*pi / (P.fromIntegral i)
+                   let step = 2*pi / P.fromIntegral i
                        grads' a = (cos a, sin a) : grads' (a+step)
                    in P.take i $ grads' 0
 
@@ -69,11 +69,9 @@ perm perms x = perms ! index1 (A.fromIntegral x .&. 255)
 
 -- 2D permutation table index function.
 index :: (IsIntegral a, Elt a) => Acc (Perms a) -> Exp (Point2 Int) -> Exp a
-index ps p = perm' (x' + perm' y')
+index ps p = perm' (x + perm' y)
       where perm' = perm ps
-            (x,y) = unlift p :: (Exp Int, Exp Int)
-            x' = A.fromIntegral x
-            y' = A.fromIntegral y
+            (x,y) = unlift . num $ p
 
 -- Index the gradients vector.
 grad :: (Elt a, IsIntegral b, Elt b) => Acc (Gradients a) -> Exp b -> Exp (Point2 a)
@@ -102,13 +100,13 @@ perlin smooth accParams p' =
            g2  = grad grads $ idx p2
            g3  = grad grads $ idx p3
            -- Compute weights
-           s   = g0 `dot` (p `minus` toFloat p0)
-           t   = g1 `dot` (p `minus` toFloat p1)
-           u   = g2 `dot` (p `minus` toFloat p2)
-           v   = g3 `dot` (p `minus` toFloat p3)
+           s   = g0 `dot` (p `minus` num p0)
+           t   = g1 `dot` (p `minus` num p1)
+           u   = g2 `dot` (p `minus` num p2)
+           v   = g3 `dot` (p `minus` num p3)
            -- Interpolate values
            (x,y)   = unlift p
-           (x0,y0) = unlift (toFloat p0)
+           (x0,y0) = unlift (num p0)
            sx  = smooth (x-x0)
            sy  = smooth (y-y0)
            a   = lerp sx s t
@@ -178,11 +176,11 @@ floor' p = lift (x',y')
              x' = A.floor x
              y' = A.floor y
 
-toFloat :: (IsFloating a, Elt a) => Exp (Point2 Int) -> Exp (Point2 a)
-toFloat p = lift (x',y')
-        where (x,y) = unlift p :: (Exp Int, Exp Int)
-              x' = A.fromIntegral x
-              y' = A.fromIntegral y
+num :: (IsNum a, Elt a) => Exp (Point2 Int) -> Exp (Point2 a)
+num p = lift (x',y')
+      where (x,y) = unlift p :: (Exp Int, Exp Int)
+            x' = A.fromIntegral x
+            y' = A.fromIntegral y
 
 plus :: (IsNum a, Elt a) => Exp (Point2 a) -> Exp (Point2 a) -> Exp (Point2 a)
 plus = lift2 f
