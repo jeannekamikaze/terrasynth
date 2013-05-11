@@ -1,4 +1,4 @@
-CFLAGS = -DDEBUG
+CFLAGS = -O2
 
 gradient: main.o gradient.o
 	$(CXX) $^ -o $@
