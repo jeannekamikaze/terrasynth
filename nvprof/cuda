@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<session version="1" name="cuda" hscale="2.243242970317874E-5">
+<executable file="/home/jeanne/programming/terrasynth/cuda/gradient" cwd="/home/jeanne/programming/terrasynth/cuda" args="foo.pgm -t perlin -w 2048 -h 2048" profileonstart="true" concurrentkernels="true"><envs></envs></executable>
+<expert><columnprops></columnprops>
+</expert>
+<analysis activescope="APPLICATION"><visitedstages><stage name="TIMELINE"/></visitedstages></analysis>
+<vruler width="200"/>
+<hruler>
+</hruler>
+<timelinestate>
+<timeline pathname="11714" kind="PROCESS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="11714/-1220413696" kind="THREAD" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="11714/-1220413696/Runtime API" kind="RUNTIME" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="11714/-1220413696/Driver API" kind="DRIVER" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="11714/Profiling Overhead" kind="OVERHEADS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460" kind="DEVICE" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1" kind="CONTEXT" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/MemCpy (HtoD)" kind="MEMCPY_HTOD" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/MemCpy (DtoH)" kind="MEMCPY_DTOH" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Compute" kind="KERNELS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Compute/kernel_noise(unsigned char const *, float2 const *, int, int, float, float*)" kind="KERNEL" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Streams" kind="STREAMS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Streams/2" kind="STREAM" containerstate="OPEN_ALL" filtered="false"/>
+</timelinestate>
+<pdm>
+H4sIAAAAAAAAAH2XbUxbVRiATz+QFmGWjY/O4ewmzjoBO2SsbmN0Y0JnMXTiXFUQhmlTcELBSXDR2RiyEDJN58eCkowuczoVXRMTN52zFY2pZkH0ByH7YRp/IH6E4I/F8kPxnPuec+957xJvcni5fZ77nntu3/f2XmImxEQIMdBooPEWOpqCjX0DTwUdTY8EHDW1LiP9aAMdHY9vqX46ONAbPNzR29f9bNDvC/t9taHDfYeOVHd3h/wh6pAcOoroiJ7MZbskM/wFS0umKumfv3dfNCg88inzbqfDHQceLbyCPDbpDyYtn38tcNvil8hj534rn5fly1wHTvYmkUeXR6ql85vxAY85vkIe42F+fhY67DXA403Yu0ma10pHpAW4rQN77Cr8YdK8bBfwTAh7bK4tUr50D/DoIPYYyxg1L3wUuP8Y9vJoGMt9dEB4grtfxt7NbMes5XMcB24ZxV4+gTphXgEdcyd5vhXsFUjXmX0fltwphXtTV42yt4qGa3wdJXQEfgXu6ZpGHqvH/UTzbD3AXZMzyLPR8KDk2RPA3dkfkVfIr7OZD7HNQLmiOvXSOjDzdafagceC2GPJ4+1/9pv53K7ngA/NY8/E8yj5aHLvIvD4cQPyGM/nHvs+RkaBR17FHpurW/ICrwH3nMIeq1OvSfOcbwMXUa5To5TPdhp49gz2WJ0OS/ky54Cn38ceY69LXuIjfn5rjMhjddovzessBW5bhz1WpyWSl10PPLMRe+zarZU8wdObsMfqdLV8fpuBj1Vhj9VpKDRfL7xoNXAR5Tp9Xpo3XAvcvx17rE73SZ57F3DHHuyxOvXw+rNK3NKIvdVEqz/mLe0DPvcQ9tawc0nM9gkvtR+4iMIrIrAJ7/wB4LHHsFes84bagXcewl6JzvMGgYsovFKd5+oGbn8Ge3Ya2ncaVY/0A184gj1WAwYpn+AzQ9hj93C5Xi69ADwexd46Gsokb2QYuIjCY86kUfMiI8ADJ7B3Gw1XpfrzxICLKLz1RLtvKP3xBu+PMeyxe61838iO8/6YwJ6DhlLJS5/l/XEWext06028x/vjQ+xtpKFOWkf0Au+PC9i7g8Cm9scnvD8uYq9ct173Zd4fSezdqcsnuOVr7G3SeUvf8v74Hnt3KXsPe9T+mOb9MY09Jw3siUXtj594f8xi724aCqV5h64BF1F4m3Xr7fyZ98cv2LtHtw7XPO+P37FXofMEJ4vYq9Std+Ev3h/XsVfFdjqPDaj9sQxcROHdq1tv/B/eHwYT8lw0eAzafS2SAzxgxR77jZbrVHBPAfbYs0bvYEQ9P2chcFsx9u6j4S2pTrN24CIKr4aGCfn3rQx42oG9rbrrnCgHPubEXi0Nl6V6ETxagb1tunxhF3B/DfbcBN/vBbdZc5B3P8H3+2w+8IwNe9tpSL34pHr90kXAE3bs7WDfwajmjZUBF1F4O9l38JtV9aIO4OFy7NUReA5X1+EE7q7A3i42r126H3DucGGvnoZim+ZZaoAvbcOeRzfv3A7gIgpvNw1bpXypeuDnG7C3R/G0eo41AR/yYa+BhnMfnKpT+7wFuIjC28t2KqTfy1bgroPYe4DApvb5E8BFFF4jDW2SRzqAL3Rhr4mGiXdizcKbCQG/1IM9Lw3jZ15RvXgvcBGFx55xvNLzy8gA8Mgg9tgzu/w7HTjK1+vLRZ5Pd13sLfyBvRV7zfy6FCp/TUruqUr+oYMeN/uu8iDqbJs0aJ4Re3TzfPexwhfKE//rxfyfKdxj/hzem/h6SHOEn+ByPUSDQukpkKWkXdnL5et28eNIlI4U0V5OzOwZkJCVFW0YRX4erbp9ZbB7Lv9wPA/em8dXXRGaglieVqLlU46xAE/ugnfjZEPyhmMO8FNT9k0GgcjI6Tm4rs5vjPpjAnSw5+g85cMisvwvvDNWvTl3Q35i09ZBzNL/aGszHCTwHmpUrs/KS/8BQCejC8gQAAA=</pdm>
+</session>

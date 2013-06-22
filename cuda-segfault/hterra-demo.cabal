@@ -1,0 +1,17 @@
+name: hterra-demo
+version: 0.1.0.0
+cabal-version: >=1.8
+build-type: Simple
+license: AllRightsReserved
+license-file: ""
+synopsis: HTerra demo
+category: Graphics
+author: Marc Sunet
+
+executable hterra-demo
+    hs-source-dirs:     .
+    build-depends:      base, accelerate, accelerate-cuda, bytestring, cmdargs, random
+    main-is:            demo.hs
+    buildable:          True
+    ghc-options:        -O2 -threaded
+    ghc-prof-options:   -rtsopts -fprof-auto -fprof-cafs

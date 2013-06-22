@@ -32,7 +32,7 @@ vec2 grads [TABLE_SIZE];
 void setup (int seed)
 {
     srand (seed);
-    
+
     // Construct a random permutaion table of values uniformly distributed
     // in the 0..255 range.
     for (int i = 0; i < TABLE_SIZE; ++i) perms[i] = i;
@@ -69,10 +69,16 @@ float dot (vec2 a, vec2 b)
     return a.x*b.x + a.y*b.y;
 }
 
-float scurve (float x)
+// 3t^2 - 2t^3
+float scurve (float t)
 {
-    float x2 = x*x;
-    return 3*x2 - 2*x2*x;
+    return t * t * (t * -2 + 3);
+}
+
+// 6t^5 - 15t^4 + 10t^3
+float scurve5 (float t)
+{
+    return t * t * t * (t * (t * 6 - 15) + 10);
 }
 
 float lerp (float a, float b, float t)
@@ -103,8 +109,8 @@ float noise (float x, float y)
     float u = dot (g2, p-p2);
     float v = dot (g3, p-p3);
 
-    float sx = scurve (x - (float)x0);
-    float sy = scurve (y - (float)y0);
+    float sx = scurve5 (x - (float)x0);
+    float sy = scurve5 (y - (float)y0);
     float a = lerp (s, t, sx);
     float b = lerp (u, v, sx);
     float c = lerp (a, b, sy);

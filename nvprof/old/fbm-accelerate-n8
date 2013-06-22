@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<session version="1" name="fbm-accelerate-n8" hscale="7.642913878119175E-6">
+<executable file="/home/jeanne/programming/terrasynth/hterra-demo/dist/build/hterra-demo/hterra-demo" cwd="/home/jeanne/tmp" args="-t fbm -n 8 -w 2048 -h 2048 -b Cuda" profileonstart="true" concurrentkernels="true"><envs></envs></executable>
+<expert><columnprops></columnprops>
+</expert>
+<analysis activescope="APPLICATION"><visitedstages><stage name="TIMELINE"/></visitedstages></analysis>
+<vruler width="200"/>
+<hruler>
+</hruler>
+<timelinestate>
+<timeline pathname="12067" kind="PROCESS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="12067/-1257243840" kind="THREAD" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="12067/-1257243840/Driver API" kind="DRIVER" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="12067/-1246758080" kind="THREAD" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="12067/-1246758080/Driver API" kind="DRIVER" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="12067/Profiling Overhead" kind="OVERHEADS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460" kind="DEVICE" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1" kind="CONTEXT" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/MemCpy (HtoD)" kind="MEMCPY_HTOD" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/MemCpy (DtoH)" kind="MEMCPY_DTOH" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Compute" kind="KERNELS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Compute/generate" kind="KERNEL" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Streams" kind="STREAMS" containerstate="OPEN_ALL" filtered="false"/>
+<timeline pathname="GeForce GTX 460/1/Streams/2" kind="STREAM" containerstate="OPEN_ALL" filtered="false"/>
+</timelinestate>
+<pdm>
+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</pdm>
+</session>
