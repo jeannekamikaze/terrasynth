@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 {-# LANGUAGE TypeOperators #-}
+=======
+>>>>>>> dev
 module Graphics.HTerra.Noise
 (
     -- * Data types
@@ -22,6 +25,8 @@ module Graphics.HTerra.Noise
 ,   FbmParams
 ,   fBmParams
 ,   fBm
+,   FbmParams'
+,   fBmParams'
 ,   fBm'
 )
 where
@@ -41,9 +46,15 @@ type Noise a b = Exp a -> Exp b
 type Perms a = Vector a
 type Gradients a = Vector (Point2 a)
 
+<<<<<<< HEAD
 type CellSize = Float
 type Hurst = Float
 type Lacunarity = Float
+=======
+type CellSize a = a
+type Hurst a = a
+type Lacunarity a = a
+>>>>>>> dev
 type Octaves = Int
 
 -- | A random number seed.
@@ -58,7 +69,7 @@ perms seed n = A.fromList (Z:.n) . fmap P.fromIntegral . P.take n $
 grads :: (Floating a, Elt a) => Int -> Gradients a
 grads n = A.fromList (Z:.n) $ grads' n
       where grads' i =
-                   let step = 2*pi / (P.fromIntegral i)
+                   let step = 2*pi / P.fromIntegral i
                        grads' a = (cos a, sin a) : grads' (a+step)
                    in P.take i $ grads' 0
 
@@ -68,24 +79,22 @@ perm perms x = perms ! index1 (A.fromIntegral x .&. 255)
 
 -- 2D permutation table index function.
 index :: (IsIntegral a, Elt a) => Acc (Perms a) -> Exp (Point2 Int) -> Exp a
-index ps p = perm' (x' + perm' y')
+index ps p = perm' (x + perm' y)
       where perm' = perm ps
-            (x,y) = unlift p :: (Exp Int, Exp Int)
-            x' = A.fromIntegral x
-            y' = A.fromIntegral y
+            (x,y) = unlift . num $ p
 
 -- Index the gradients vector.
 grad :: (Elt a, IsIntegral b, Elt b) => Acc (Gradients a) -> Exp b -> Exp (Point2 a)
 grad grads i = grads ! index1 (A.fromIntegral i)
 
 -- | Perlin noise parameters.
-type PerlinParams = (Perms Word8, Gradients Float, Vector Float)
+type PerlinParams a = (Perms Word8, Gradients a, Vector a)
 
-perlinParams :: Perms Word8 -> Gradients Float -> CellSize -> PerlinParams
+perlinParams :: Elt a => Perms Word8 -> Gradients a -> CellSize a -> PerlinParams a
 perlinParams ps gs cs = (ps, gs, A.fromList (Z:.1) [cs])
 
 -- | Perlin noise function.
-perlin :: Smooth Float -> Acc PerlinParams -> Noise (Point2 Float) Float
+perlin :: (IsFloating a, Elt a) => Smooth a -> Acc (PerlinParams a) -> Noise (Point2 a) a
 perlin smooth accParams p' =
        let (perms, grads, params) = unlift accParams
            cs  = params ! index1 0
@@ -101,13 +110,13 @@ perlin smooth accParams p' =
            g2  = grad grads $ idx p2
            g3  = grad grads $ idx p3
            -- Compute weights
-           s   = g0 `dot` (p `minus` toFloat p0)
-           t   = g1 `dot` (p `minus` toFloat p1)
-           u   = g2 `dot` (p `minus` toFloat p2)
-           v   = g3 `dot` (p `minus` toFloat p3)
+           s   = g0 `dot` (p `minus` num p0)
+           t   = g1 `dot` (p `minus` num p1)
+           u   = g2 `dot` (p `minus` num p2)
+           v   = g3 `dot` (p `minus` num p3)
            -- Interpolate values
-           (x,y)   = unlift p :: (Exp Float, Exp Float)
-           (x0,y0) = unlift (toFloat p0) :: (Exp Float, Exp Float)
+           (x,y)   = unlift p
+           (x0,y0) = unlift (num p0)
            sx  = smooth (x-x0)
            sy  = smooth (y-y0)
            a   = lerp sx s t
@@ -116,92 +125,72 @@ perlin smooth accParams p' =
        in  c*0.5 + 0.5
 
 -- | fBm parameters.
-type FbmParams a = (a, Vector Float)
+type FbmParams c a = (c, Vector a)
 
-fBmParams :: a -> Hurst -> Lacunarity -> Octaves -> FbmParams a
-fBmParams c h l o = (c, A.fromList (Z:.3) [h, l, P.fromIntegral o])
+fBmParams :: Elt a => c -> Hurst a -> Lacunarity a -> FbmParams c a
+fBmParams c h l = (c, A.fromList (Z:.2) [h, l])
 
 -- | fBm noise function.
-fBm :: (Arrays c)
-    => (Acc c -> Noise (Point2 Float) Float)
-    -> Acc (FbmParams c)
-    -> Noise (Point2 Float) Float
+fBm :: (IsFloating a, Elt a, Arrays c)
+    => Octaves
+    -> (Acc c -> Noise (Point2 a) a)
+    -> Acc (FbmParams c a)
+    -> Noise (Point2 a) a
 
-fBm noise' accParams p = fBm' o 1 1 0
+fBm o noise' accParams p = iter o 1 1 0
     where (basisParams, params) = unlift accParams
           h  = params ! index1 0
           l  = params ! index1 1
-          o  = A.floor $ params ! index1 2 :: Exp Int
+          o' = constant o
           noise = noise' basisParams
           gain = l ** (-2*h)
-          maxfBm = geom gain (A.fromIntegral o)
-          --maxfBm = if gain == 1 then 1 else geom gain (A.fromIntegral o)
-          fBm' o f a val = o <=* 0 ?
-               ( val / maxfBm
-               , fBm' (o-1) (l*f) (a*gain) $ (+val) . (*a) . noise . scale f $ p)
+          maxfBm = gain ==* 1 ? (1, geom gain (P.fromIntegral o))
+          iter o f a val
+               | o == 0 = val / maxfBm
+               | otherwise =  iter (o-1) (l*f) (a*gain) $ (+val) . (*a) . noise . scale f $ p
+
+-- | fBm' parameters.
+type FbmParams' c a = (c, Vector a)
+
+fBmParams' :: (IsFloating a, Elt a) => c -> Hurst a -> Lacunarity a -> Octaves -> FbmParams' c a
+fBmParams' c h l o = (c, A.fromList (Z:.3) [h, l, P.fromIntegral o])
 
 -- | fBm noise function.
-fBm' :: (Arrays c)
-     => (Acc c -> Noise (Point2 Float) Float) -- ^ The basis noise function
-     -> Acc (FbmParams c)
-     -> Noise (Point3 Float) Float
+fBm' :: (IsFloating a, Elt a, Arrays c)
+     => (Acc c -> Noise (Point2 a) a) -- ^ The basis noise function
+     -> Acc (FbmParams' c a)
+     -> Noise (Point3 a) a
 
-fBm' noise' accParams p' = (/maxfBm) . (*a) . noise . scale f $ lift (x,y)
+fBm' noise' accParams p = (/maxfBm) . (*a) . noise . scale f . lift $ (x,y)
      where (basisParams, params) = unlift accParams
            h = params ! index1 0
            l = params ! index1 1
            o = params ! index1 2
-           f = l ** z
-           a = l ** (-2*h*z)
-           --a = gain ** z
-           gain = l ** (-2*h)
-           maxfBm = geom gain o
+           (maxfBm, a, f, x, y) = iter h l o p
            noise = noise' basisParams
-           (x,y,z) = unlift p' :: (Exp Float, Exp Float, Exp Float)
-
-{-fBm noise' accParams p = fBm' o 1 1 0 -- Prelude.Eq.== applied to EDSL types
-    where (basisParams, params) = unlift accParams
-          h  = params ! index1 0
-          l  = params ! index1 1
-          o  = A.floor $ params ! index1 2 :: Exp Int
-          noise = noise' basisParams
-          gain = l ** (-2*h)
-          maxfBm = geom gain (A.fromIntegral o)
-          --maxfBm = if gain == 1 then 1 else geom gain (A.fromIntegral o)
-          fBm' 0 f a val = val / maxfBm
-          fBm' o f a val =
-               let val' = (+val) . (*a) . noise . scale f $ p
-               in val' `seq` fBm' (o-1) (l*f) (a*gain) val'-}
-
-{-fBm noise' accParams p = -- Shared Exp evaluation
-    let (basisParams, params) = unlift accParams
-        h  = params ! index1 0
-        l  = params ! index1 1
-        o  = A.floor $ params ! index1 2
-        vals   = A.zipWith (*) amps noises
-        amps   = A.map (\x -> gain**x) nums
-        gain   = l ** (-2*h)
-        noises = A.map noise points
-        points = A.zipWith scale freqs $ A.fill (index1 o) p
-        freqs  = A.map (\x -> l**x) nums
-        nums   = A.generate (index1 o) $ \ix -> let (Z:.i) = unlift ix in A.fromIntegral i
-        maxfBm = geom gain (A.fromIntegral o)
-        noise  = noise' basisParams
-    in A.fold1 (+) vals ! index0 / maxfBm-}
+           iter :: (IsFloating a, Elt a)
+                => Exp (Hurst a) -> Exp (Lacunarity a) -> Exp a -> Exp (a,a,a)
+                -> (Exp a, Exp a, Exp a, Exp a, Exp a)
+           iter h l o p = (maxfBm, a, f, x, y)
+                where (x,y,z) = unlift p
+                      f = l ** z
+                      a = l ** (-2*h*z)
+                      gain = l ** (-2*h)
+                      maxfBm = gain ==* 1 ? (1, geom gain o)
 
 geom r n = (1 - r**n) / (1-r)
 
-floor' :: Exp (Point2 Float) -> Exp (Point2 Int)
+floor' :: (IsFloating a, Elt a) => Exp (Point2 a) -> Exp (Point2 Int)
 floor' p = lift (x',y')
-       where (x,y) = unlift p :: (Exp Float, Exp Float)
+       where (x,y) = unlift p
              x' = A.floor x
              y' = A.floor y
 
-toFloat :: Exp (Point2 Int) -> Exp (Point2 Float)
-toFloat p = lift (x',y')
-        where (x,y) = unlift p :: (Exp Int, Exp Int)
-              x' = A.fromIntegral x
-              y' = A.fromIntegral y
+num :: (IsNum a, Elt a) => Exp (Point2 Int) -> Exp (Point2 a)
+num p = lift (x',y')
+      where (x,y) = unlift p :: (Exp Int, Exp Int)
+            x' = A.fromIntegral x
+            y' = A.fromIntegral y
 
 plus :: (IsNum a, Elt a) => Exp (Point2 a) -> Exp (Point2 a) -> Exp (Point2 a)
 plus = lift2 f

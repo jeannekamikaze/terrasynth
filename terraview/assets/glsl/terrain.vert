@@ -11,14 +11,18 @@ layout (location = 1) in vec3 VertexNormal;
 
 out vec3 Position;
 out vec3 Normal;
+out vec2 TexCoord;
+out float Height;
 
 void main ()
 {
-	float y = texture (heightmap, VertexPosition).r;
-	vec4 v = ModelView * vec4 (VertexPosition.x, y, -VertexPosition.y, 1.0);
+    float y = texture (heightmap, VertexPosition).r;
+    vec4 v = ModelView * vec4 (VertexPosition.x, y, -VertexPosition.y, 1.0);
 
-        Position = vec3 (v);
-	Normal = NormalMat * VertexNormal;
+    Position = vec3 (v);
+    Normal = NormalMat * VertexNormal;
+    TexCoord = VertexPosition;
+    Height = y;
 
-	gl_Position = Projection * v;
+    gl_Position = Projection * v;
 }

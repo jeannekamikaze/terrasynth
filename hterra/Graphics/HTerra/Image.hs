@@ -46,16 +46,16 @@ image' noise' w h params =
                  in noise . lift $ (A.fromIntegral x, A.fromIntegral y)
 
 -- | Create an image using fractional Brownian motion.
-fBmImage :: (Arrays c)
-         => Runner (FbmParams c) (Image Float)
-         -> (Acc c -> Noise (Point2 Float) Float)
-         -> Octaves -> Width -> Height -> FbmParams c -> Image Float
+fBmImage :: (IsFloating a, Elt a, Arrays c)
+         => Runner (FbmParams c a) (Image a)
+         -> (Acc c -> Noise (Point2 a) a)
+         -> Octaves -> Width -> Height -> FbmParams c a -> Image a
 fBmImage run1 noise o w h = run1 $ fBmImage' noise o w h
 
 -- | Create an image using fractional Brownian motion.
-fBmImage' :: (Arrays c)
-          => (Acc c -> Noise (Point2 Float) Float)
-          -> Octaves -> Width -> Height -> Acc (FbmParams c) -> Acc (Image Float)
+fBmImage' :: (IsFloating a, Elt a, Arrays c)
+          => (Acc c -> Noise (Point2 a) a)
+          -> Octaves -> Width -> Height -> Acc (FbmParams' c a) -> Acc (Image a)
 fBmImage' noise' o w h params =
           let noise = fBm' noise' params
           in A.fold1 (+) $ A.generate (constant (Z:.w:.h:.o)) $
